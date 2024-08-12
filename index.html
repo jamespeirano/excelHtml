@@ -3,6 +3,9 @@
 <head>
     <title>Excel Plugin - Cognito Redirect</title>
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <script type="text/javascript">
+        console.log("index.html script started loading.");
+    </script>
     <style>
         body {
             font-family: 'DM Sans', sans-serif;
@@ -56,6 +59,7 @@
         </div>
     </div>
     <script>
+        console.log("index.html body script started.");
         const COGNITO_DOMAIN = 'https://adversys.auth.us-east-1.amazoncognito.com';
         const CLIENT_ID = '24454oleqph3653lbtqb3bn5e7';
         const REDIRECT_URI = 'https://jamespeirano.github.io/excelHtml/redirect.html';
@@ -72,10 +76,12 @@
                 const authUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+phone`;
                 console.log("Auth URL:", authUrl);
                 Office.context.ui.displayDialogAsync(authUrl, { height: 60, width: 30 }, function (result) {
+                    console.log("displayDialogAsync callback fired.");
                     if (result.status === Office.AsyncResultStatus.Succeeded) {
                         console.log("Dialog opened successfully.");
                         dialog = result.value;
                         dialog.addEventHandler(Office.EventType.DialogMessageReceived, handleMessage);
+                        console.log("DialogMessageReceived event handler added.");
                     } else {
                         console.error("Failed to open dialog:", result.error.message);
                     }
@@ -84,10 +90,11 @@
         });
 
         function handleMessage(arg) {
-            console.log("Message received from dialog:", arg.message);
+            console.log("handleMessage function called with arg:", arg);
             try {
                 // Parse the message as JSON
                 const message = JSON.parse(arg.message);
+                console.log("Parsed message:", message);
                 if (message.type === 'authSuccess') {
                     console.log("Authentication successful.");
                     // User is logged in, update UI
@@ -106,6 +113,7 @@
         }
 
         function updateUILoggedIn() {
+            console.log("updateUILoggedIn called");
             isLoggedIn = true;
             document.getElementById("loginButton").innerText = "Log Out";
             document.getElementById("selectedCells").style.display = "block";
@@ -113,6 +121,7 @@
         }
 
         function updateUILoggedOut() {
+            console.log("updateUILoggedOut called");
             isLoggedIn = false;
             document.getElementById("loginButton").innerText = "Log In with Cognito";
             document.getElementById("selectedCells").style.display = "none";
@@ -121,6 +130,7 @@
         }
 
         function logout() {
+            console.log("logout function called");
             sessionStorage.removeItem('authCode');
             updateUILoggedOut();
             stopListeningForSelectionChanges();
@@ -128,39 +138,50 @@
         }
 
         function startListeningForSelectionChanges() {
+            console.log("startListeningForSelectionChanges called");
             Excel.run(function (context) {
+                console.log("Excel.run started for startListeningForSelectionChanges");
                 var sheet = context.workbook.worksheets.getActiveWorksheet();
                 sheet.onSelectionChanged.add(handleSelectionChange);
-                return context.sync();
+                return context.sync().then(function() {
+                    console.log("Selection change event handler added successfully");
+                });
             }).catch(function (error) {
-                console.log("Error: " + error);
+                console.error("Error in startListeningForSelectionChanges:", error);
             });
         }
 
         function stopListeningForSelectionChanges() {
+            console.log("stopListeningForSelectionChanges called");
             Excel.run(function (context) {
+                console.log("Excel.run started for stopListeningForSelectionChanges");
                 var sheet = context.workbook.worksheets.getActiveWorksheet();
                 sheet.onSelectionChanged.remove(handleSelectionChange);
-                return context.sync();
+                return context.sync().then(function() {
+                    console.log("Selection change event handler removed successfully");
+                });
             }).catch(function (error) {
-                console.log("Error: " + error);
+                console.error("Error in stopListeningForSelectionChanges:", error);
             });
         }
 
         function handleSelectionChange(event) {
+            console.log("handleSelectionChange called with event:", event);
             Excel.run(function (context) {
+                console.log("Excel.run started for handleSelectionChange");
                 var range = context.workbook.getSelectedRange();
                 range.load("address");
                 return context.sync().then(function () {
+                    console.log("Selected range address:", range.address);
                     document.getElementById("cellsDisplay").innerText = range.address;
                 });
             }).catch(function (error) {
-                console.log("Error: " + error);
+                console.error("Error in handleSelectionChange:", error);
             });
         }
 
-        Office.onReady(function() {
-            console.log("Office.js is ready.");
+        Office.onReady(function(info) {
+            console.log("Office.onReady called with info:", info);
             // Check if already logged in
             const authCode = sessionStorage.getItem('authCode');
             if (authCode) {
@@ -172,6 +193,8 @@
                 updateUILoggedOut();
             }
         });
+
+        console.log("index.html script finished loading.");
     </script>
 </body>
 </html>

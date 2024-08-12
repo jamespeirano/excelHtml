@@ -3,27 +3,33 @@
 <head>
     <title>Redirect Page</title>
     <script type="text/javascript">
+        console.log("Redirect page script started.");
         window.onload = function() {
-            console.log("Redirect page loaded.");
+            console.log("Redirect page window.onload event fired.");
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
             console.log("Authorization code:", code);
 
             if (code) {
+                console.log("Code found. Attempting to store and send message.");
                 // Store the code or exchange it for tokens here
                 localStorage.setItem('authCode', code);
                 console.log("Auth code stored in localStorage.");
                 
-                // Send the message as a JSON string
-                window.opener.postMessage(JSON.stringify({ type: 'authSuccess', code: code }), '*');
-                console.log("Message sent to parent window.");
+                try {
+                    // Send the message as a JSON string
+                    window.opener.postMessage(JSON.stringify({ type: 'authSuccess', code: code }), '*');
+                    console.log("Message sent to parent window.");
+                } catch (error) {
+                    console.error("Error sending message to parent window:", error);
+                }
                 
+                console.log("Attempting to close redirect window.");
                 window.close();
-                console.log("Redirect page closed.");
+                console.log("Close command issued for redirect page.");
             } else {
-                // Handle error
-                document.getElementById('message').innerText = 'Login failed.';
                 console.error("No authorization code found in URL.");
+                document.getElementById('message').innerText = 'Login failed.';
             }
         }
     </script>
@@ -32,5 +38,6 @@
     <h1>Redirect Successful</h1>
     <p>If you are seeing this page, the redirect has worked correctly.</p>
     <p id="message"></p>
+    <script>console.log("Redirect page body loaded.");</script>
 </body>
 </html>
