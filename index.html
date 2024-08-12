@@ -129,8 +129,14 @@
                     sessionStorage.setItem('refresh_token', tokens.refresh_token);
                     updateUILoggedIn(cognitoSub);
                     
-                    dialog.close();
-                    console.log("Dialog closed.");
+                    try {
+                        await dialog.close();
+                        console.log("Dialog closed successfully.");
+                    } catch (closeError) {
+                        console.error("Error closing dialog:", closeError);
+                        // Proceed even if dialog closure fails
+                    }
+                    
                     startListeningForSelectionChanges();
                 }
             } catch (error) {
