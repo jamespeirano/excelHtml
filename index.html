@@ -57,6 +57,7 @@
         <button id="loginButton">Log In with Cognito</button>
         <div id="selectedCells" style="display: none;">
             Selected cells: <span id="cellsDisplay"></span>
+            <button id="submitButton" style="display: none;">Submit</button>
         </div>
         <div id="userInfo" style="display: none;">
             User sub: <span id="userSub"></span>
@@ -68,9 +69,12 @@
         const CLIENT_ID = '24454oleqph3653lbtqb3bn5e7';
         const REDIRECT_URI = 'https://jamespeirano.github.io/excelHtml/redirect.html';
         const TOKEN_ENDPOINT = `${COGNITO_DOMAIN}/oauth2/token`;
+        const LAMBDA_ENDPOINT = 'https://6cf6avtlnd.execute-api.us-east-1.amazonaws.com/prod/query';
 
         let dialog;
         let isLoggedIn = false;
+        let currentCognitoSub = '';
+        let currentSelectedRange = null;
 
         document.getElementById("loginButton").addEventListener("click", () => {
             console.log("Login button clicked.");
@@ -91,6 +95,15 @@
                         console.error("Failed to open dialog:", result.error.message);
                     }
                 });
+            }
+        });
+
+        document.getElementById("submitButton").addEventListener("click", () => {
+            console.log("Submit button clicked.");
+            if (currentSelectedRange) {
+                submitSelectedCellContent();
+            } else {
+                console.log("No cell selected.");
             }
         });
 
@@ -151,8 +164,10 @@
         function updateUILoggedIn(cognitoSub) {
             console.log("updateUILoggedIn called");
             isLoggedIn = true;
+            currentCognitoSub = cognitoSub;
             document.getElementById("loginButton").innerText = "Log Out";
             document.getElementById("selectedCells").style.display = "block";
+            document.getElementById("submitButton").style.display = "inline-block";
             document.getElementById("userInfo").style.display = "block";
             document.getElementById("userSub").innerText = cognitoSub;
             console.log("UI updated for logged in state.");
@@ -161,8 +176,10 @@
         function updateUILoggedOut() {
             console.log("updateUILoggedOut called");
             isLoggedIn = false;
+            currentCognitoSub = '';
             document.getElementById("loginButton").innerText = "Log In with Cognito";
             document.getElementById("selectedCells").style.display = "none";
+            document.getElementById("submitButton").style.display = "none";
             document.getElementById("userInfo").style.display = "none";
             document.getElementById("cellsDisplay").innerText = "";
             document.getElementById("userSub").innerText = "";
@@ -216,10 +233,61 @@
                 return context.sync().then(function () {
                     console.log("Selected range address:", range.address);
                     document.getElementById("cellsDisplay").innerText = range.address;
+                    currentSelectedRange = range;
                 });
             }).catch(function (error) {
                 console.error("Error in handleSelectionChange:", error);
             });
+        }
+
+        async function submitSelectedCellContent() {
+            console.log("submitSelectedCellContent called");
+            if (!currentSelectedRange) {
+                console.log("No cell selected.");
+                return;
+            }
+
+            try {
+                await Excel.run(async (context) => {
+                    let range = currentSelectedRange.getCell(0,0);
+                    range.load("values, rowIndex, columnIndex");
+                    await context.sync();
+
+                    let cellContent = range.values[0][0];
+                    let rowIndex = range.rowIndex;
+                    let columnIndex = range.columnIndex;
+
+                    console.log("Selected cell content:", cellContent);
+
+                    const response = await fetch(LAMBDA_ENDPOINT, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            query: cellContent,
+                            chat_history: '',
+                            cognito_sub: currentCognitoSub
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const data = await response.json();
+                    console.log("Lambda function response:", data);
+
+                    // Write the response to the cell to the right
+                    let responseCell = context.workbook.worksheets.getActiveWorksheet().getCell(rowIndex, columnIndex + 1);
+                    responseCell.values = [[data.response]];
+
+                    await context.sync();
+                    console.log("Response written to cell successfully");
+                });
+            } catch (error) {
+                console.error("Error in submitSelectedCellContent:", error);
+            }
         }
 
         Office.onReady(function(info) {
