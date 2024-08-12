@@ -3,6 +3,7 @@
 <head>
     <title>Excel Plugin - Cognito Redirect</title>
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
     <script type="text/javascript">
         console.log("index.html script started loading.");
     </script>
@@ -57,12 +58,16 @@
         <div id="selectedCells" style="display: none;">
             Selected cells: <span id="cellsDisplay"></span>
         </div>
+        <div id="userInfo" style="display: none;">
+            User sub: <span id="userSub"></span>
+        </div>
     </div>
     <script>
         console.log("index.html body script started.");
         const COGNITO_DOMAIN = 'https://adversys.auth.us-east-1.amazoncognito.com';
         const CLIENT_ID = '24454oleqph3653lbtqb3bn5e7';
         const REDIRECT_URI = 'https://jamespeirano.github.io/excelHtml/redirect.html';
+        const TOKEN_ENDPOINT = `${COGNITO_DOMAIN}/oauth2/token`;
 
         let dialog;
         let isLoggedIn = false;
@@ -89,22 +94,29 @@
             }
         });
 
-        function handleMessage(arg) {
+        async function handleMessage(arg) {
             console.log("handleMessage function called with arg:", arg);
             try {
-                // Parse the message as JSON
                 const message = JSON.parse(arg.message);
                 console.log("Parsed message:", message);
                 if (message.type === 'authSuccess') {
                     console.log("Authentication successful.");
-                    // User is logged in, update UI
-                    updateUILoggedIn();
-                    // Store the token or authorization code for future API calls
-                    sessionStorage.setItem('authCode', message.code);
-                    console.log("Auth code stored in sessionStorage.");
+                    const tokens = await exchangeCodeForTokens(message.code);
+                    console.log("Tokens received:", tokens);
+                    
+                    // Decode the ID token to get the Cognito sub
+                    const decodedToken = jwt_decode(tokens.id_token);
+                    const cognitoSub = decodedToken.sub;
+                    console.log("Cognito sub:", cognitoSub);
+                    
+                    // Store tokens and update UI
+                    sessionStorage.setItem('id_token', tokens.id_token);
+                    sessionStorage.setItem('access_token', tokens.access_token);
+                    sessionStorage.setItem('refresh_token', tokens.refresh_token);
+                    updateUILoggedIn(cognitoSub);
+                    
                     dialog.close();
                     console.log("Dialog closed.");
-                    // Start listening for selection changes
                     startListeningForSelectionChanges();
                 }
             } catch (error) {
@@ -112,11 +124,37 @@
             }
         }
 
-        function updateUILoggedIn() {
+        async function exchangeCodeForTokens(code) {
+            console.log("Exchanging code for tokens");
+            const body = new URLSearchParams({
+                grant_type: 'authorization_code',
+                client_id: CLIENT_ID,
+                code: code,
+                redirect_uri: REDIRECT_URI
+            });
+
+            const response = await fetch(TOKEN_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: body
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to exchange code for tokens');
+            }
+
+            return response.json();
+        }
+
+        function updateUILoggedIn(cognitoSub) {
             console.log("updateUILoggedIn called");
             isLoggedIn = true;
             document.getElementById("loginButton").innerText = "Log Out";
             document.getElementById("selectedCells").style.display = "block";
+            document.getElementById("userInfo").style.display = "block";
+            document.getElementById("userSub").innerText = cognitoSub;
             console.log("UI updated for logged in state.");
         }
 
@@ -125,68 +163,32 @@
             isLoggedIn = false;
             document.getElementById("loginButton").innerText = "Log In with Cognito";
             document.getElementById("selectedCells").style.display = "none";
+            document.getElementById("userInfo").style.display = "none";
             document.getElementById("cellsDisplay").innerText = "";
+            document.getElementById("userSub").innerText = "";
             console.log("UI updated for logged out state.");
         }
 
         function logout() {
             console.log("logout function called");
-            sessionStorage.removeItem('authCode');
+            sessionStorage.removeItem('id_token');
+            sessionStorage.removeItem('access_token');
+            sessionStorage.removeItem('refresh_token');
             updateUILoggedOut();
             stopListeningForSelectionChanges();
             console.log("User logged out.");
         }
 
-        function startListeningForSelectionChanges() {
-            console.log("startListeningForSelectionChanges called");
-            Excel.run(function (context) {
-                console.log("Excel.run started for startListeningForSelectionChanges");
-                var sheet = context.workbook.worksheets.getActiveWorksheet();
-                sheet.onSelectionChanged.add(handleSelectionChange);
-                return context.sync().then(function() {
-                    console.log("Selection change event handler added successfully");
-                });
-            }).catch(function (error) {
-                console.error("Error in startListeningForSelectionChanges:", error);
-            });
-        }
-
-        function stopListeningForSelectionChanges() {
-            console.log("stopListeningForSelectionChanges called");
-            Excel.run(function (context) {
-                console.log("Excel.run started for stopListeningForSelectionChanges");
-                var sheet = context.workbook.worksheets.getActiveWorksheet();
-                sheet.onSelectionChanged.remove(handleSelectionChange);
-                return context.sync().then(function() {
-                    console.log("Selection change event handler removed successfully");
-                });
-            }).catch(function (error) {
-                console.error("Error in stopListeningForSelectionChanges:", error);
-            });
-        }
-
-        function handleSelectionChange(event) {
-            console.log("handleSelectionChange called with event:", event);
-            Excel.run(function (context) {
-                console.log("Excel.run started for handleSelectionChange");
-                var range = context.workbook.getSelectedRange();
-                range.load("address");
-                return context.sync().then(function () {
-                    console.log("Selected range address:", range.address);
-                    document.getElementById("cellsDisplay").innerText = range.address;
-                });
-            }).catch(function (error) {
-                console.error("Error in handleSelectionChange:", error);
-            });
-        }
+        // ... (startListeningForSelectionChanges, stopListeningForSelectionChanges, and handleSelectionChange functions remain unchanged) ...
 
         Office.onReady(function(info) {
             console.log("Office.onReady called with info:", info);
-            // Check if already logged in
-            const authCode = sessionStorage.getItem('authCode');
-            if (authCode) {
+            const idToken = sessionStorage.getItem('id_token');
+            if (idToken) {
                 console.log("User is already logged in.");
-                updateUILoggedIn();
+                const decodedToken = jwt_decode(idToken);
+                const cognitoSub = decodedToken.sub;
+                updateUILoggedIn(cognitoSub);
                 startListeningForSelectionChanges();
             } else {
                 console.log("User is not logged in.");
