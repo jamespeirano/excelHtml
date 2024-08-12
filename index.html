@@ -19,8 +19,9 @@
         #container {
             width: 100%;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            gap: 20px;
         }
 
         button {
@@ -36,11 +37,23 @@
         button:hover {
             background-color: #4e3090;
         }
+
+        #selectedCells {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #3a3a3a;
+            border-radius: 4px;
+            width: 80%;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <div id="container">
         <button id="loginButton">Log In with Cognito</button>
+        <div id="selectedCells" style="display: none;">
+            Selected cells: <span id="cellsDisplay"></span>
+        </div>
     </div>
     <script>
         const COGNITO_DOMAIN = 'https://adversys.auth.us-east-1.amazoncognito.com';
@@ -48,20 +61,26 @@
         const REDIRECT_URI = 'https://jamespeirano.github.io/excelHtml/redirect.html';
 
         let dialog;
+        let isLoggedIn = false;
 
         document.getElementById("loginButton").addEventListener("click", () => {
             console.log("Login button clicked.");
-            const authUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+phone`;
-            console.log("Auth URL:", authUrl);
-            Office.context.ui.displayDialogAsync(authUrl, { height: 60, width: 30 }, function (result) {
-                if (result.status === Office.AsyncResultStatus.Succeeded) {
-                    console.log("Dialog opened successfully.");
-                    dialog = result.value;
-                    dialog.addEventHandler(Office.EventType.DialogMessageReceived, handleMessage);
-                } else {
-                    console.error("Failed to open dialog:", result.error.message);
-                }
-            });
+            if (isLoggedIn) {
+                console.log("User is already logged in. Logging out.");
+                logout();
+            } else {
+                const authUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+phone`;
+                console.log("Auth URL:", authUrl);
+                Office.context.ui.displayDialogAsync(authUrl, { height: 60, width: 30 }, function (result) {
+                    if (result.status === Office.AsyncResultStatus.Succeeded) {
+                        console.log("Dialog opened successfully.");
+                        dialog = result.value;
+                        dialog.addEventHandler(Office.EventType.DialogMessageReceived, handleMessage);
+                    } else {
+                        console.error("Failed to open dialog:", result.error.message);
+                    }
+                });
+            }
         });
 
         function handleMessage(arg) {
@@ -72,17 +91,72 @@
                 if (message.type === 'authSuccess') {
                     console.log("Authentication successful.");
                     // User is logged in, update UI
-                    document.getElementById("loginButton").innerText = "Logged In";
-                    console.log("Button text updated to 'Logged In'.");
+                    updateUILoggedIn();
                     // Store the token or authorization code for future API calls
                     sessionStorage.setItem('authCode', message.code);
                     console.log("Auth code stored in sessionStorage.");
                     dialog.close();
                     console.log("Dialog closed.");
+                    // Start listening for selection changes
+                    startListeningForSelectionChanges();
                 }
             } catch (error) {
                 console.error("Failed to process message from dialog:", error);
             }
+        }
+
+        function updateUILoggedIn() {
+            isLoggedIn = true;
+            document.getElementById("loginButton").innerText = "Log Out";
+            document.getElementById("selectedCells").style.display = "block";
+            console.log("UI updated for logged in state.");
+        }
+
+        function updateUILoggedOut() {
+            isLoggedIn = false;
+            document.getElementById("loginButton").innerText = "Log In with Cognito";
+            document.getElementById("selectedCells").style.display = "none";
+            document.getElementById("cellsDisplay").innerText = "";
+            console.log("UI updated for logged out state.");
+        }
+
+        function logout() {
+            sessionStorage.removeItem('authCode');
+            updateUILoggedOut();
+            stopListeningForSelectionChanges();
+            console.log("User logged out.");
+        }
+
+        function startListeningForSelectionChanges() {
+            Excel.run(function (context) {
+                var sheet = context.workbook.worksheets.getActiveWorksheet();
+                sheet.onSelectionChanged.add(handleSelectionChange);
+                return context.sync();
+            }).catch(function (error) {
+                console.log("Error: " + error);
+            });
+        }
+
+        function stopListeningForSelectionChanges() {
+            Excel.run(function (context) {
+                var sheet = context.workbook.worksheets.getActiveWorksheet();
+                sheet.onSelectionChanged.remove(handleSelectionChange);
+                return context.sync();
+            }).catch(function (error) {
+                console.log("Error: " + error);
+            });
+        }
+
+        function handleSelectionChange(event) {
+            Excel.run(function (context) {
+                var range = context.workbook.getSelectedRange();
+                range.load("address");
+                return context.sync().then(function () {
+                    document.getElementById("cellsDisplay").innerText = range.address;
+                });
+            }).catch(function (error) {
+                console.log("Error: " + error);
+            });
         }
 
         Office.onReady(function() {
@@ -91,9 +165,11 @@
             const authCode = sessionStorage.getItem('authCode');
             if (authCode) {
                 console.log("User is already logged in.");
-                document.getElementById("loginButton").innerText = "Logged In";
+                updateUILoggedIn();
+                startListeningForSelectionChanges();
             } else {
-                console.log("User is not logged in..");
+                console.log("User is not logged in.");
+                updateUILoggedOut();
             }
         });
     </script>
