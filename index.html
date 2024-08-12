@@ -43,13 +43,29 @@
             background-color: #4e3090;
         }
 
-        #selectedCells, #userInfo {
+        #selectedCells, #userInfo, #progressInfo {
             margin-top: 20px;
             padding: 10px;
             background-color: #3a3a3a;
             border-radius: 4px;
             width: 80%;
             text-align: center;
+        }
+
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #7c5ed2;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -62,6 +78,10 @@
         <button id="submitButton" style="display: none;">Submit</button>
         <div id="userInfo" style="display: none;">
             User sub: <span id="userSub"></span>
+        </div>
+        <div id="progressInfo" style="display: none;">
+            <div id="progressText"></div>
+            <div class="loader"></div>
         </div>
     </div>
     <script>
@@ -183,6 +203,7 @@
             document.getElementById("selectedCells").style.display = "none";
             document.getElementById("submitButton").style.display = "none";
             document.getElementById("userInfo").style.display = "none";
+            document.getElementById("progressInfo").style.display = "none";
             document.getElementById("cellsDisplay").innerText = "";
             document.getElementById("userSub").innerText = "";
             console.log("UI updated for logged out state.");
@@ -247,52 +268,69 @@
                 await Excel.run(async (context) => {
                     console.log("Excel.run started for submitSelectedCellContent");
                     let range = context.workbook.getSelectedRange();
-                    range.load("values, rowIndex, columnIndex, address");
+                    range.load("values, rowIndex, columnIndex, address, rowCount, columnCount");
                     await context.sync();
 
                     console.log("Selected range address:", range.address);
-                    let cellContent = range.values[0][0];
                     let rowIndex = range.rowIndex;
                     let columnIndex = range.columnIndex;
+                    let rowCount = range.rowCount;
+                    let columnCount = range.columnCount;
 
-                    console.log("Selected cell content:", cellContent);
-                    console.log("Row index:", rowIndex);
-                    console.log("Column index:", columnIndex);
+                    document.getElementById("progressInfo").style.display = "block";
+                    document.querySelector(".loader").style.display = "block";
 
-                    if (!cellContent) {
-                        console.log("Selected cell is empty. Aborting submission.");
-                        return;
+                    for (let i = 0; i < rowCount; i++) {
+                        for (let j = 0; j < columnCount; j++) {
+                            let cellContent = range.values[i][j];
+                            let currentCellAddress = context.workbook.worksheets.getActiveWorksheet().getCell(rowIndex + i, columnIndex + j).address;
+
+                            console.log(`Processing cell ${currentCellAddress}`);
+                            document.getElementById("progressText").innerText = `Getting response for cell ${currentCellAddress}`;
+
+                            if (!cellContent) {
+                                console.log(`Cell ${currentCellAddress} is empty. Skipping.`);
+                                continue;
+                            }
+
+                            console.log("Sending request to Lambda function");
+                            const response = await fetch(LAMBDA_ENDPOINT, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    query: cellContent,
+                                    chat_history: '',
+                                    cognito_sub: currentCognitoSub
+                                })
+                            });
+
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+
+                            const data = await response.json();
+                            console.log("Lambda function response:", data);
+
+                            // Write the response to the cell to the right
+                            let responseCell = context.workbook.worksheets.getActiveWorksheet().getCell(rowIndex + i, columnIndex + j + 1);
+                            responseCell.values = [[data.response]];
+
+                            await context.sync();
+                            console.log(`Response written to cell ${responseCell.address} successfully`);
+                        }
                     }
 
-                    console.log("Sending request to Lambda function");
-                    const response = await fetch(LAMBDA_ENDPOINT, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            query: cellContent,
-                            chat_history: '',
-                            cognito_sub: currentCognitoSub
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-
-                    const data = await response.json();
-                    console.log("Lambda function response:", data);
-
-                    // Write the response to the cell to the right
-                    let responseCell = context.workbook.worksheets.getActiveWorksheet().getCell(rowIndex, columnIndex + 1);
-                    responseCell.values = [[data.response]];
-
-                    await context.sync();
-                    console.log("Response written to cell successfully");
+                    document.getElementById("progressInfo").style.display = "none";
+                    document.querySelector(".loader").style.display = "none";
+                    document.getElementById("progressText").innerText = "Processing complete";
                 });
             } catch (error) {
                 console.error("Error in submitSelectedCellContent:", error);
+                document.getElementById("progressInfo").style.display = "none";
+                document.querySelector(".loader").style.display = "none";
+                document.getElementById("progressText").innerText = "Error occurred during processing";
             }
         }
 
