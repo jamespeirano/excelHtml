@@ -1,101 +1,106 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Excel Plugin - Cognito Redirect</title>
-    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
-    <style>
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background-color: #2a2a2a;
-            color: #ddd;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
+    <meta charset="UTF-8">
+    <title>Adversys</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <script>
+        let CLIENT_ID = '24454oleqph3653lbtqb3bn5e7';
+        const AUTH_URL = 'https://adversys.auth.us-east-1.amazoncognito.com';
+        let redirect_uri = 'https://jamespeirano.github.io/excelHtml/redirect.html';
+
+        async function getSelectedRange() {
+            return await Excel.run(async (context) => {
+                const range = context.workbook.getSelectedRange();
+                range.load("address");
+                await context.sync();
+                return range.address.split("!").slice(-1)[0];
+            });
         }
 
-        #container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        async function updateRangeSelect() {
+            try {
+                const selection = await getSelectedRange();
+                document.getElementById('selectionDisplay').innerText = `[${selection}]`;
+            } catch (error) {
+                console.error('An error occurred:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            Office.onReady(async (info) => {
+                if (info.host === Office.HostType.Excel) {
+                    document.getElementById('loginRequest').addEventListener('click', function() {
+                        Office.context.ui.displayDialogAsync(
+                            `${AUTH_URL}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${redirect_uri}&scope=email+openid+phone`,
+                            { height: 60, width: 30 },
+                            function (result) {
+                                let dialog = result.value;
+                                dialog.addEventHandler(Office.EventType.DialogMessageReceived, function (message) {
+                                    const authCode = message.message;
+                                    document.getElementById('loginRequest').innerText = 'Logged in';
+                                    localStorage.setItem('authCode', authCode);
+                                    dialog.close();
+                                });
+                            }
+                        );
+                    });
+
+                    // Set up selection change event listener
+                    Excel.run(async (context) => {
+                        const sheet = context.workbook.worksheets.getActiveWorksheet();
+                        sheet.onSelectionChanged.add(updateRangeSelect);
+                        await context.sync();
+                    }).catch(function (error) {
+                        console.log("Error: " + error);
+                    });
+
+                    // Update range on load
+                    updateRangeSelect();
+                }
+            });
+        });
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #333;
+            color: #fff;
         }
 
         button {
-            padding: 18px;
-            background-color: #7c5ed2;
-            cursor: pointer;
+            background-color: #6c63ff;
             color: #fff;
-            font-size: 18px;
             border: none;
-            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 16px;
+            border-radius: 5px;
         }
 
-        button:hover {
-            background-color: #4e3090;
+        #loginRequest {
+            background-color: #6c63ff;
+            color: #fff;
+            font-size: 16px;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        #selectionDisplay {
+            color: #6c63ff;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <button id="loginButton">Log In with Cognito</button>
-    </div>
-    <script>
-        const COGNITO_DOMAIN = 'https://adversys.auth.us-east-1.amazoncognito.com';
-        const CLIENT_ID = '24454oleqph3653lbtqb3bn5e7';
-        const REDIRECT_URI = 'https://jamespeirano.github.io/excelHtml/redirect.html';
-
-        let dialog;
-
-        document.getElementById("loginButton").addEventListener("click", () => {
-            console.log("Login button clicked.");
-            const authUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+phone`;
-            console.log("Auth URL:", authUrl);
-            Office.context.ui.displayDialogAsync(authUrl, { height: 60, width: 30 }, function (result) {
-                if (result.status === Office.AsyncResultStatus.Succeeded) {
-                    console.log("Dialog opened successfully.");
-                    dialog = result.value;
-                    dialog.addEventHandler(Office.EventType.DialogMessageReceived, handleMessage);
-                } else {
-                    console.error("Failed to open dialog:", result.error.message);
-                }
-            });
-        });
-
-        function handleMessage(arg) {
-            console.log("Message received from dialog:", arg.message);
-            try {
-                // Parse the message as JSON
-                const message = JSON.parse(arg.message);
-                if (message.type === 'authSuccess') {
-                    console.log("Authentication successful.");
-                    // User is logged in, update UI
-                    document.getElementById("loginButton").innerText = "Logged In";
-                    console.log("Button text updated to 'Logged In'.");
-                    // Store the token or authorization code for future API calls
-                    sessionStorage.setItem('authCode', message.code);
-                    console.log("Auth code stored in sessionStorage.");
-                    dialog.close();
-                    console.log("Dialog closed.");
-                }
-            } catch (error) {
-                console.error("Failed to process message from dialog:", error);
-            }
-        }
-
-        Office.onReady(function() {
-            console.log("Office.js is ready.");
-            // Check if already logged in
-            const authCode = sessionStorage.getItem('authCode');
-            if (authCode) {
-                console.log("User is already logged in.");
-                document.getElementById("loginButton").innerText = "Logged In";
-            } else {
-                console.log("User is not logged in.");
-            }
-        });
-    </script>
+    <h1>Adversys</h1>
+    <p id="emailDisplay"></p>
+    <button id="loginRequest">Log In with Cognito</button>
+    <p>Select cells in your spreadsheet to see the selection displayed below:</p>
+    <p id="selectionDisplay">[None]</p>
 </body>
 </html>
