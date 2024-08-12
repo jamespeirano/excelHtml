@@ -36,6 +36,7 @@
             font-size: 18px;
             border: none;
             border-radius: 4px;
+            margin-top: 10px;
         }
 
         button:hover {
@@ -57,8 +58,8 @@
         <button id="loginButton">Log In with Cognito</button>
         <div id="selectedCells" style="display: none;">
             Selected cells: <span id="cellsDisplay"></span>
-            <button id="submitButton" style="display: none;">Submit</button>
         </div>
+        <button id="submitButton" style="display: none;">Submit</button>
         <div id="userInfo" style="display: none;">
             User sub: <span id="userSub"></span>
         </div>
@@ -167,7 +168,7 @@
             currentCognitoSub = cognitoSub;
             document.getElementById("loginButton").innerText = "Log Out";
             document.getElementById("selectedCells").style.display = "block";
-            document.getElementById("submitButton").style.display = "inline-block";
+            document.getElementById("submitButton").style.display = "block";
             document.getElementById("userInfo").style.display = "block";
             document.getElementById("userSub").innerText = cognitoSub;
             console.log("UI updated for logged in state.");
@@ -249,6 +250,7 @@
 
             try {
                 await Excel.run(async (context) => {
+                    console.log("Excel.run started for submitSelectedCellContent");
                     let range = currentSelectedRange.getCell(0,0);
                     range.load("values, rowIndex, columnIndex");
                     await context.sync();
@@ -258,7 +260,10 @@
                     let columnIndex = range.columnIndex;
 
                     console.log("Selected cell content:", cellContent);
+                    console.log("Row index:", rowIndex);
+                    console.log("Column index:", columnIndex);
 
+                    console.log("Sending request to Lambda function");
                     const response = await fetch(LAMBDA_ENDPOINT, {
                         method: 'POST',
                         headers: {
