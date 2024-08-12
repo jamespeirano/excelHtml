@@ -13,8 +13,11 @@
                 // Store the code or exchange it for tokens here
                 localStorage.setItem('authCode', code);
                 console.log("Auth code stored in localStorage.");
-                window.opener.postMessage({ type: 'authSuccess', code: code }, '*');
+                
+                // Send the message as a JSON string
+                window.opener.postMessage(JSON.stringify({ type: 'authSuccess', code: code }), '*');
                 console.log("Message sent to parent window.");
+                
                 window.close();
                 console.log("Redirect page closed.");
             } else {

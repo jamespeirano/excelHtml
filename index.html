@@ -67,6 +67,7 @@
         function handleMessage(arg) {
             console.log("Message received from dialog:", arg.message);
             try {
+                // Parse the message as JSON
                 const message = JSON.parse(arg.message);
                 if (message.type === 'authSuccess') {
                     console.log("Authentication successful.");
