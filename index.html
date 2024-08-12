@@ -45,7 +45,7 @@
     <script>
         const COGNITO_DOMAIN = 'https://adversys.auth.us-east-1.amazoncognito.com';
         const CLIENT_ID = '24454oleqph3653lbtqb3bn5e7';
-        const REDIRECT_URI = 'https://github.com/jamespeirano/excelHtml.git';
+        const REDIRECT_URI = 'https://jamespeirano.github.io/excelHtml/redirect';
 
         document.getElementById("loginButton").addEventListener("click", () => {
             const authUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+phone`;
