@@ -75,7 +75,6 @@
         let dialog;
         let isLoggedIn = false;
         let currentCognitoSub = '';
-        let currentSelectedRange = null;
 
         document.getElementById("loginButton").addEventListener("click", () => {
             console.log("Login button clicked.");
@@ -101,11 +100,7 @@
 
         document.getElementById("submitButton").addEventListener("click", () => {
             console.log("Submit button clicked.");
-            if (currentSelectedRange) {
-                submitSelectedCellContent();
-            } else {
-                console.log("No cell selected.");
-            }
+            submitSelectedCellContent();
         });
 
         async function handleMessage(arg) {
@@ -240,7 +235,6 @@
                 return context.sync().then(function () {
                     console.log("Selected range address:", range.address);
                     document.getElementById("cellsDisplay").innerText = range.address;
-                    currentSelectedRange = range;
                 });
             }).catch(function (error) {
                 console.error("Error in handleSelectionChange:", error);
@@ -249,18 +243,14 @@
 
         async function submitSelectedCellContent() {
             console.log("submitSelectedCellContent called");
-            if (!currentSelectedRange) {
-                console.log("No cell selected.");
-                return;
-            }
-
             try {
                 await Excel.run(async (context) => {
                     console.log("Excel.run started for submitSelectedCellContent");
-                    let range = currentSelectedRange.getCell(0,0);
-                    range.load("values, rowIndex, columnIndex");
+                    let range = context.workbook.getSelectedRange();
+                    range.load("values, rowIndex, columnIndex, address");
                     await context.sync();
 
+                    console.log("Selected range address:", range.address);
                     let cellContent = range.values[0][0];
                     let rowIndex = range.rowIndex;
                     let columnIndex = range.columnIndex;
@@ -268,6 +258,11 @@
                     console.log("Selected cell content:", cellContent);
                     console.log("Row index:", rowIndex);
                     console.log("Column index:", columnIndex);
+
+                    if (!cellContent) {
+                        console.log("Selected cell is empty. Aborting submission.");
+                        return;
+                    }
 
                     console.log("Sending request to Lambda function");
                     const response = await fetch(LAMBDA_ENDPOINT, {
