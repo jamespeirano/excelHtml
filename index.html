@@ -50,29 +50,49 @@
         let dialog;
 
         document.getElementById("loginButton").addEventListener("click", () => {
+            console.log("Login button clicked.");
             const authUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+phone`;
+            console.log("Auth URL:", authUrl);
             Office.context.ui.displayDialogAsync(authUrl, { height: 60, width: 30 }, function (result) {
-                dialog = result.value;
-                dialog.addEventHandler(Office.EventType.DialogMessageReceived, handleMessage);
+                if (result.status === Office.AsyncResultStatus.Succeeded) {
+                    console.log("Dialog opened successfully.");
+                    dialog = result.value;
+                    dialog.addEventHandler(Office.EventType.DialogMessageReceived, handleMessage);
+                } else {
+                    console.error("Failed to open dialog:", result.error.message);
+                }
             });
         });
 
         function handleMessage(arg) {
-            const message = JSON.parse(arg.message);
-            if (message.type === 'authSuccess') {
-                // User is logged in, update UI
-                document.getElementById("loginButton").innerText = "Logged In";
-                // Optionally, store the token or authorization code for future API calls
-                sessionStorage.setItem('authCode', message.code);
-                dialog.close();
+            console.log("Message received from dialog:", arg.message);
+            try {
+                const message = JSON.parse(arg.message);
+                if (message.type === 'authSuccess') {
+                    console.log("Authentication successful.");
+                    // User is logged in, update UI
+                    document.getElementById("loginButton").innerText = "Logged In";
+                    console.log("Button text updated to 'Logged In'.");
+                    // Store the token or authorization code for future API calls
+                    sessionStorage.setItem('authCode', message.code);
+                    console.log("Auth code stored in sessionStorage.");
+                    dialog.close();
+                    console.log("Dialog closed.");
+                }
+            } catch (error) {
+                console.error("Failed to process message from dialog:", error);
             }
         }
 
         Office.onReady(function() {
+            console.log("Office.js is ready.");
             // Check if already logged in
             const authCode = sessionStorage.getItem('authCode');
             if (authCode) {
+                console.log("User is already logged in.");
                 document.getElementById("loginButton").innerText = "Logged In";
+            } else {
+                console.log("User is not logged in.");
             }
         });
     </script>

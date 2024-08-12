@@ -4,16 +4,23 @@
     <title>Redirect Page</title>
     <script type="text/javascript">
         window.onload = function() {
+            console.log("Redirect page loaded.");
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
+            console.log("Authorization code:", code);
+
             if (code) {
                 // Store the code or exchange it for tokens here
                 localStorage.setItem('authCode', code);
+                console.log("Auth code stored in localStorage.");
                 window.opener.postMessage({ type: 'authSuccess', code: code }, '*');
+                console.log("Message sent to parent window.");
                 window.close();
+                console.log("Redirect page closed.");
             } else {
                 // Handle error
                 document.getElementById('message').innerText = 'Login failed.';
+                console.error("No authorization code found in URL.");
             }
         }
     </script>
