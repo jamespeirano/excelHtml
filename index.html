@@ -42,7 +42,7 @@
             background-color: #4e3090;
         }
 
-        #selectedCells {
+        #selectedCells, #userInfo {
             margin-top: 20px;
             padding: 10px;
             background-color: #3a3a3a;
@@ -179,7 +179,48 @@
             console.log("User logged out.");
         }
 
-        // ... (startListeningForSelectionChanges, stopListeningForSelectionChanges, and handleSelectionChange functions remain unchanged) ...
+        function startListeningForSelectionChanges() {
+            console.log("startListeningForSelectionChanges called");
+            Excel.run(function (context) {
+                console.log("Excel.run started for startListeningForSelectionChanges");
+                var sheet = context.workbook.worksheets.getActiveWorksheet();
+                sheet.onSelectionChanged.add(handleSelectionChange);
+                return context.sync().then(function() {
+                    console.log("Selection change event handler added successfully");
+                });
+            }).catch(function (error) {
+                console.error("Error in startListeningForSelectionChanges:", error);
+            });
+        }
+
+        function stopListeningForSelectionChanges() {
+            console.log("stopListeningForSelectionChanges called");
+            Excel.run(function (context) {
+                console.log("Excel.run started for stopListeningForSelectionChanges");
+                var sheet = context.workbook.worksheets.getActiveWorksheet();
+                sheet.onSelectionChanged.remove(handleSelectionChange);
+                return context.sync().then(function() {
+                    console.log("Selection change event handler removed successfully");
+                });
+            }).catch(function (error) {
+                console.error("Error in stopListeningForSelectionChanges:", error);
+            });
+        }
+
+        function handleSelectionChange(event) {
+            console.log("handleSelectionChange called with event:", event);
+            Excel.run(function (context) {
+                console.log("Excel.run started for handleSelectionChange");
+                var range = context.workbook.getSelectedRange();
+                range.load("address");
+                return context.sync().then(function () {
+                    console.log("Selected range address:", range.address);
+                    document.getElementById("cellsDisplay").innerText = range.address;
+                });
+            }).catch(function (error) {
+                console.error("Error in handleSelectionChange:", error);
+            });
+        }
 
         Office.onReady(function(info) {
             console.log("Office.onReady called with info:", info);
