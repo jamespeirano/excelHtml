@@ -48,6 +48,8 @@
         const REDIRECT_URI = 'https://jamespeirano.github.io/excelHtml/redirect.html';
 
         document.getElementById("loginButton").addEventListener("click", () => {
+            console.log("Button clicked!");
+            alert("Button clicked!");   
             const authUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+phone`;
             Office.context.ui.displayDialogAsync(authUrl);
         });
