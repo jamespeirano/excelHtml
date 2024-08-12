@@ -43,15 +43,25 @@
         <button id="loginButton">Log In with Cognito</button>
     </div>
     <script>
-        const COGNITO_DOMAIN = 'https://adversys.auth.us-east-1.amazoncognito.com';
-        const CLIENT_ID = '24454oleqph3653lbtqb3bn5e7';
-        const REDIRECT_URI = 'https://jamespeirano.github.io/excelHtml/redirect.html';
+        Office.onReady(info => {
+            if (info.host === Office.HostType.Excel) {
+                document.getElementById("loginButton").addEventListener("click", () => {
+                    console.log("Button clicked!");
 
-        document.getElementById("loginButton").addEventListener("click", () => {
-            console.log("Button clicked!");
-            alert("Button clicked!");   
-            const authUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+phone`;
-            Office.context.ui.displayDialogAsync(authUrl);
+                    const COGNITO_DOMAIN = 'https://adversys.auth.us-east-1.amazoncognito.com';
+                    const CLIENT_ID = '24454oleqph3653lbtqb3bn5e7';
+                    const REDIRECT_URI = 'https://jamespeirano.github.io/excelHtml/redirect.html';
+
+                    const authUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${encodeURIComponent(CLIENT_ID)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=email+openid+phone`;
+                    Office.context.ui.displayDialogAsync(authUrl, { height: 50, width: 50 }, (asyncResult) => {
+                        if (asyncResult.status === Office.AsyncResultStatus.Failed) {
+                            console.error('Failed to open dialog:', asyncResult.error.message);
+                        } else {
+                            console.log('Dialog opened successfully');
+                        }
+                    });
+                });
+            }
         });
     </script>
 </body>
