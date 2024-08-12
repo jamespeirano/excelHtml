@@ -43,8 +43,12 @@
         <button id="loginButton">Log In with Cognito</button>
     </div>
     <script>
-        Office.onReady(info => {
+        // Wait until Office.js is ready before running any code
+        Office.onReady((info) => {
             if (info.host === Office.HostType.Excel) {
+                console.log("Office.js is ready");
+
+                // Event listener for the login button
                 document.getElementById("loginButton").addEventListener("click", () => {
                     console.log("Button clicked!");
 
