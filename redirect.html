@@ -1,30 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Redirect Page</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #333;
-            color: #fff;
+    <script type="text/javascript">
+        window.onload = function() {
+            console.log("Redirect page loaded.");
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            console.log("Authorization code:", code);
+
+            if (code) {
+                // Store the code or exchange it for tokens here
+                localStorage.setItem('authCode', code);
+                console.log("Auth code stored in localStorage.");
+                
+                // Send the message as a JSON string
+                window.opener.postMessage(JSON.stringify({ type: 'authSuccess', code: code }), '*');
+                console.log("Message sent to parent window.");
+                
+                window.close();
+                console.log("Redirect page closed.");
+            } else {
+                // Handle error
+                document.getElementById('message').innerText = 'Login failed.';
+                console.error("No authorization code found in URL.");
+            }
         }
-    </style>
+    </script>
 </head>
 <body>
     <h1>Redirect Successful</h1>
     <p>If you are seeing this page, the redirect has worked correctly.</p>
-
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const authCode = urlParams.get('code');
-
-        if (authCode) {
-            Office.onReady(() => {
-                Office.context.ui.messageParent(authCode);
-            });
-        }
-    </script>
+    <p id="message"></p>
 </body>
 </html>
