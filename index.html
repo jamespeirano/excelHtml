@@ -43,28 +43,36 @@
         <button id="loginButton">Log In with Cognito</button>
     </div>
     <script>
-        // Wait until Office.js is ready before running any code
-        Office.onReady((info) => {
-            if (info.host === Office.HostType.Excel) {
-                console.log("Office.js is ready");
+        const COGNITO_DOMAIN = 'https://adversys.auth.us-east-1.amazoncognito.com';
+        const CLIENT_ID = '24454oleqph3653lbtqb3bn5e7';
+        const REDIRECT_URI = 'https://jamespeirano.github.io/excelHtml/redirect.html';
 
-                // Event listener for the login button
-                document.getElementById("loginButton").addEventListener("click", () => {
-                    console.log("Button clicked!");
+        let dialog;
 
-                    const COGNITO_DOMAIN = 'https://adversys.auth.us-east-1.amazoncognito.com';
-                    const CLIENT_ID = '24454oleqph3653lbtqb3bn5e7';
-                    const REDIRECT_URI = 'https://jamespeirano.github.io/excelHtml/redirect.html';
+        document.getElementById("loginButton").addEventListener("click", () => {
+            const authUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+phone`;
+            Office.context.ui.displayDialogAsync(authUrl, { height: 60, width: 30 }, function (result) {
+                dialog = result.value;
+                dialog.addEventHandler(Office.EventType.DialogMessageReceived, handleMessage);
+            });
+        });
 
-                    const authUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${encodeURIComponent(CLIENT_ID)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=email+openid+phone`;
-                    Office.context.ui.displayDialogAsync(authUrl, { height: 50, width: 50 }, (asyncResult) => {
-                        if (asyncResult.status === Office.AsyncResultStatus.Failed) {
-                            console.error('Failed to open dialog:', asyncResult.error.message);
-                        } else {
-                            console.log('Dialog opened successfully');
-                        }
-                    });
-                });
+        function handleMessage(arg) {
+            const message = JSON.parse(arg.message);
+            if (message.type === 'authSuccess') {
+                // User is logged in, update UI
+                document.getElementById("loginButton").innerText = "Logged In";
+                // Optionally, store the token or authorization code for future API calls
+                sessionStorage.setItem('authCode', message.code);
+                dialog.close();
+            }
+        }
+
+        Office.onReady(function() {
+            // Check if already logged in
+            const authCode = sessionStorage.getItem('authCode');
+            if (authCode) {
+                document.getElementById("loginButton").innerText = "Logged In";
             }
         });
     </script>

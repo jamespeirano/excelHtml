@@ -2,24 +2,25 @@
 <html>
 <head>
     <title>Redirect Page</title>
-    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <script type="text/javascript">
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            if (code) {
+                // Store the code or exchange it for tokens here
+                localStorage.setItem('authCode', code);
+                window.opener.postMessage({ type: 'authSuccess', code: code }, '*');
+                window.close();
+            } else {
+                // Handle error
+                document.getElementById('message').innerText = 'Login failed.';
+            }
+        }
+    </script>
 </head>
 <body>
     <h1>Redirect Successful</h1>
     <p>If you are seeing this page, the redirect has worked correctly.</p>
-
-    <script>
-        Office.onReady(() => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-
-            if (code) {
-                // Sends the code back to the parent window in the Office add-in
-                Office.context.ui.messageParent(code);
-            } else {
-                document.write("<p>No authorization code found in the URL parameters.</p>");
-            }
-        });
-    </script>
+    <p id="message"></p>
 </body>
 </html>
