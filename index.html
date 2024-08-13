@@ -262,89 +262,101 @@
             });
         }
 
-        async function submitSelectedCellContent() {
-            console.log("submitSelectedCellContent called");
-            try {
-                await Excel.run(async (context) => {
-                    console.log("Excel.run started for submitSelectedCellContent");
-                    let range = context.workbook.getSelectedRange();
-                    range.load("values, rowIndex, columnIndex, address, rowCount, columnCount");
+async function submitSelectedCellContent() {
+    console.log("submitSelectedCellContent called");
+    try {
+        await Excel.run(async (context) => {
+            console.log("Excel.run started for submitSelectedCellContent");
+            let range = context.workbook.getSelectedRange();
+            range.load("values, rowIndex, columnIndex, address, rowCount, columnCount");
+            await context.sync();
+
+            console.log("Selected range address:", range.address);
+            let rowIndex = range.rowIndex;
+            let columnIndex = range.columnIndex;
+            let rowCount = range.rowCount;
+            let columnCount = range.columnCount;
+
+            document.getElementById("progressInfo").style.display = "block";
+            document.querySelector(".loader").style.display = "block";
+
+            for (let i = 0; i < rowCount; i++) {
+                for (let j = 0; j < columnCount; j++) {
+                    let cellContent = range.values[i][j];
+                    let cell = context.workbook.worksheets.getActiveWorksheet().getCell(rowIndex + i, columnIndex + j);
+                    cell.load("address");
                     await context.sync();
+                    let currentCellAddress = cell.address;
 
-                    console.log("Selected range address:", range.address);
-                    let rowIndex = range.rowIndex;
-                    let columnIndex = range.columnIndex;
-                    let rowCount = range.rowCount;
-                    let columnCount = range.columnCount;
+                    console.log(`Processing cell ${currentCellAddress}`);
+                    document.getElementById("progressText").innerText = `Getting response for cell ${currentCellAddress}`;
 
-                    document.getElementById("progressInfo").style.display = "block";
-                    document.querySelector(".loader").style.display = "block";
+                    if (!cellContent) {
+                        console.log(`Cell ${currentCellAddress} is empty. Skipping.`);
+                        continue;
+                    }
 
-                    for (let i = 0; i < rowCount; i++) {
-                        for (let j = 0; j < columnCount; j++) {
-                            let cellContent = range.values[i][j];
-                            let cell = context.workbook.worksheets.getActiveWorksheet().getCell(rowIndex + i, columnIndex + j);
-                            cell.load("address");
-                            await context.sync();
-                            let currentCellAddress = cell.address;
+                    console.log("Sending request to Lambda function");
+                    let retries = 3;
+                    while (retries > 0) {
+                        try {
+                            const response = await fetch(LAMBDA_ENDPOINT, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    query: cellContent,
+                                    chat_history: '',
+                                    cognito_sub: currentCognitoSub
+                                })
+                            });
 
-                            console.log(`Processing cell ${currentCellAddress}`);
-                            document.getElementById("progressText").innerText = `Getting response for cell ${currentCellAddress}`;
-
-                            if (!cellContent) {
-                                console.log(`Cell ${currentCellAddress} is empty. Skipping.`);
-                                continue;
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
                             }
 
-                            console.log("Sending request to Lambda function");
-                            try {
-                                const response = await fetch(LAMBDA_ENDPOINT, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({
-                                        query: cellContent,
-                                        chat_history: '',
-                                        cognito_sub: currentCognitoSub
-                                    })
-                                });
+                            const data = await response.json();
+                            console.log("Lambda function response:", data);
 
-                                if (!response.ok) {
-                                    throw new Error(`HTTP error! status: ${response.status}`);
-                                }
-
-                                const data = await response.json();
-                                console.log("Lambda function response:", data);
-
-                                // Write the response to the cell to the right
+                            // Write the response to the cell to the right
+                            let responseCell = context.workbook.worksheets.getActiveWorksheet().getCell(rowIndex + i, columnIndex + j + 1);
+                            responseCell.values = [[data.response]];
+                            responseCell.load("address");
+                            await context.sync();
+                            console.log(`Response written to cell ${responseCell.address} successfully`);
+                            break; // Success, exit retry loop
+                        } catch (fetchError) {
+                            console.error(`Error fetching from Lambda (${retries} retries left):`, fetchError);
+                            retries--;
+                            if (retries === 0) {
                                 let responseCell = context.workbook.worksheets.getActiveWorksheet().getCell(rowIndex + i, columnIndex + j + 1);
-                                responseCell.values = [[data.response]];
-                                responseCell.load("address");
-                                await context.sync();
-                                console.log(`Response written to cell ${responseCell.address} successfully`);
-                            } catch (fetchError) {
-                                console.error("Error fetching from Lambda:", fetchError);
-                                let responseCell = context.workbook.worksheets.getActiveWorksheet().getCell(rowIndex + i, columnIndex + j + 1);
-                                responseCell.values = [["Error: Failed to fetch response"]];
+                                responseCell.values = [["Error: Failed to fetch response after multiple attempts"]];
                                 responseCell.load("address");
                                 await context.sync();
                                 console.log(`Error message written to cell ${responseCell.address}`);
+                            } else {
+                                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retrying
                             }
                         }
                     }
 
-                    document.getElementById("progressInfo").style.display = "none";
-                    document.querySelector(".loader").style.display = "none";
-                    document.getElementById("progressText").innerText = "Processing complete";
-                });
-            } catch (error) {
-                console.error("Error in submitSelectedCellContent:", error);
-                document.getElementById("progressInfo").style.display = "none";
-                document.querySelector(".loader").style.display = "none";
-                document.getElementById("progressText").innerText = "Error occurred during processing";
+                    // Add a 2-second delay between processing cells
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
             }
-        }
+
+            document.getElementById("progressInfo").style.display = "none";
+            document.querySelector(".loader").style.display = "none";
+            document.getElementById("progressText").innerText = "Processing complete";
+        });
+    } catch (error) {
+        console.error("Error in submitSelectedCellContent:", error);
+        document.getElementById("progressInfo").style.display = "none";
+        document.querySelector(".loader").style.display = "none";
+        document.getElementById("progressText").innerText = "Error occurred during processing";
+    }
+}
 
         Office.onReady(function(info) {
             console.log("Office.onReady called with info:", info);
