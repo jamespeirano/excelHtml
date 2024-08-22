@@ -317,7 +317,7 @@
             });
         }
 
-        async function processCellContent(cellContent, currentCellAddress, rowIndex, columnIndex, context, retryCount = 0) {
+        async function processCellContent(cellContent, currentCellAddress, rowIndex, columnIndex, context) {
     console.log(`Processing cell ${currentCellAddress}`);
 
     const maxRetries = 5;
@@ -376,13 +376,13 @@ async function retryFailedCells(failedCells, context, retryCount) {
     console.log(`Retrying ${failedCells.length} failed cells. Attempt ${retryCount + 1}/3`);
     document.getElementById("progressText").innerText = "Retrying failed cells...";
     
-    let stillFailedCells = [];
-    for (let cell of failedCells) {
-        const success = await processCellContent(cell.content, cell.address, cell.rowIndex, cell.columnIndex, context, retryCount);
-        if (!success) {
-            stillFailedCells.push(cell);
-        }
-    }
+    const retryPromises = failedCells.map(cell => 
+        processCellContent(cell.content, cell.address, cell.rowIndex, cell.columnIndex, context)
+    );
+
+    const results = await Promise.all(retryPromises);
+    
+    const stillFailedCells = failedCells.filter((_, index) => !results[index]);
     
     if (stillFailedCells.length > 0 && retryCount < 2) {
         console.log(`Waiting 5 seconds before next retry attempt...`);
@@ -412,7 +412,8 @@ async function submitSelectedCellContent() {
             document.querySelector(".loader").style.display = "block";
             document.getElementById("progressText").innerText = "Processing request...";
 
-            let failedCells = [];
+            let cellPromises = [];
+            let cellInfos = [];
 
             for (let i = 0; i < rowCount; i++) {
                 for (let j = 0; j < columnCount; j++) {
@@ -427,17 +428,20 @@ async function submitSelectedCellContent() {
                         continue;
                     }
 
-                    const success = await processCellContent(cellContent, currentCellAddress, rowIndex + i, columnIndex + j, context);
-                    if (!success) {
-                        failedCells.push({
-                            content: cellContent,
-                            address: currentCellAddress,
-                            rowIndex: rowIndex + i,
-                            columnIndex: columnIndex + j
-                        });
-                    }
+                    cellInfos.push({
+                        content: cellContent,
+                        address: currentCellAddress,
+                        rowIndex: rowIndex + i,
+                        columnIndex: columnIndex + j
+                    });
+
+                    cellPromises.push(processCellContent(cellContent, currentCellAddress, rowIndex + i, columnIndex + j, context));
                 }
             }
+
+            const results = await Promise.all(cellPromises);
+            
+            let failedCells = cellInfos.filter((_, index) => !results[index]);
 
             if (failedCells.length > 0) {
                 console.log(`${failedCells.length} cells failed. Retrying...`);
