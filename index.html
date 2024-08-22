@@ -376,7 +376,7 @@ async function processCellContent(cellContent, currentCellAddress, rowIndex, col
     console.log(`Processing cell ${currentCellAddress}`);
     document.getElementById("progressText").innerText = `Getting response for cell ${currentCellAddress}`;
 
-    let retries = 25;
+    let retries = 5;
     while (retries > 0) {
         try {
             const response = await fetch(LAMBDA_ENDPOINT, {
