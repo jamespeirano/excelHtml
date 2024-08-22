@@ -7,122 +7,122 @@
     <script type="text/javascript">
         console.log("index.html script started loading.");
     </script>
-    <style>
-        :root {
-            --primary-color: #3498db;
-            --secondary-color: #2ecc71;
-            --background-color: #ecf0f1;
-            --text-color: #34495e;
-            --error-color: #e74c3c;
-            --success-color: #27ae60;
-            --border-color: #bdc3c7;
-        }
-    
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-    
-        #container {
-            width: 100%;
-            max-width: 600px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-    
-        h1 {
-            color: var(--primary-color);
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-    
-        button {
-            padding: 12px 24px;
-            background-color: var(--primary-color);
-            color: white;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.1s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-    
-        button:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px);
-        }
-    
-        button:active {
-            transform: translateY(0);
-        }
-    
-        #selectedCells, #userInfo, #progressInfo {
-            width: 100%;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-            margin-top: 15px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-    
-        .info-label {
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-    
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--secondary-color);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 10px auto;
-            display: none;
-        }
-    
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    
-        #progressText {
-            margin-top: 10px;
-            font-style: italic;
-            color: var(--secondary-color);
-        }
-    
-        #submitButton {
-            background-color: var(--secondary-color);
-        }
-    
-        #submitButton:hover {
-            background-color: #27ae60;
-        }
-    
-        #userInfo, #selectedCells {
-            transition: background-color 0.3s ease;
-        }
-    
-        #userInfo:hover, #selectedCells:hover {
-            background-color: #e8e8e8;
-        }
-    </style>
+<style>
+    :root {
+        --primary-color: rgb(10, 42, 68);
+        --secondary-color: rgb(10, 42, 68);
+        --background-color: #ecf0f1;
+        --text-color: #34495e;
+        --error-color: #e74c3c;
+        --success-color: #27ae60;
+        --border-color: #bdc3c7;
+    }
+
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: var(--background-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+    }
+
+    #container {
+        width: 100%;
+        max-width: 600px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+        color: var(--primary-color);
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    button {
+        padding: 12px 24px;
+        background-color: var(--primary-color);
+        color: white;
+        font-size: 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.1s ease, opacity 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    button:hover {
+        opacity: 0.8;
+        transform: translateY(-2px);
+    }
+
+    button:active {
+        transform: translateY(0);
+    }
+
+    #selectedCells, #userInfo, #progressInfo {
+        width: 100%;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border: 1px solid var(--border-color);
+        border-radius: 5px;
+        margin-top: 15px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .info-label {
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+
+    .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--secondary-color);
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 10px auto;
+        display: none;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    #progressText {
+        margin-top: 10px;
+        font-style: italic;
+        color: var(--secondary-color);
+    }
+
+    #submitButton {
+        background-color: var(--secondary-color);
+    }
+
+    #submitButton:hover {
+        opacity: 0.8;
+    }
+
+    #userInfo, #selectedCells {
+        transition: background-color 0.3s ease;
+    }
+
+    #userInfo:hover, #selectedCells:hover {
+        background-color: #e8e8e8;
+    }
+</style>
 </head>
 <body>
     <div id="container">
