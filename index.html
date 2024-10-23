@@ -17,11 +17,24 @@
             --success: #107C10;  /* Office success */
             --error: #A4262C;   /* Office error */
             --border: #E1DFDD;  /* Office neutral light */
+            --brand-primary: #0078d4;
+            --brand-secondary: #106ebe;
+            --surface-bg: #ffffff;
+            --panel-bg: #faf9f8;
+            --text-primary: #323130;
+            --text-secondary: #605e5c;
+            --success: #107c10;
+            --error: #a4262c;
+            --border: #edebe9;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+            --neutral-lighter: #f3f2f1;
+            --neutral-light: #edebe9;
         }
 
         body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #f9fafb;
+            background-color: var(--neutral-lighter);
             color: var(--text-primary);
             margin: 0;
             min-height: 100vh;
@@ -35,7 +48,8 @@
             margin: 0 auto;
             background: var(--surface-bg);
             border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
             padding: 1.5rem;
         }
 
@@ -43,16 +57,17 @@
             display: block; /* Changed from flex to block */
             padding: 1rem 0;
             border-bottom: 1px solid var(--border);
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             max-width: 900px; /* Limit the maximum width */
             margin: 0 auto;
+            background: var(--surface-bg);
         }
 
         .header-title {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 600;
             color: var(--text-primary);
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         button {
@@ -79,17 +94,25 @@
         }
 
         .info-panel {
-            background-color: #f8fafc;
+            background-color: var(--neutral-lighter);
             border: 1px solid var(--border);
-            border-radius: 0.375rem;
+            border-radius: 2px;
             padding: 1rem;
             margin: 1rem 0;
+            transition: all 0.2s ease;
+        }
+
+        .info-panel:hover {
+            border-color: var(--brand-primary);
+            box-shadow: var(--shadow-sm);
         }
 
         .info-panel-title {
             font-weight: 500;
             margin-bottom: 0.5rem;
             color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
         }
 
         .info-panel-content {
@@ -100,7 +123,7 @@
         .loader {
             width: 1.5rem;
             height: 1.5rem;
-            border: 2px solid #f3f3f3;
+            border: 2px solid var(--neutral-light);
             border-top: 2px solid var(--brand-primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -138,11 +161,11 @@
         .tooltip .tooltip-text {
             visibility: hidden;
             width: 200px;
-            background-color: #333;
-            color: #fff;
+            background-color: var(--text-primary);
+            color: white;
             text-align: center;
             border-radius: 2px;
-            padding: 5px;
+            padding: 8px 12px;
             position: absolute;
             z-index: 1;
             bottom: 125%;
@@ -150,6 +173,8 @@
             transform: translateX(-50%);
             opacity: 0;
             transition: opacity 0.3s;
+            box-shadow: var(--shadow-md);
+            font-size: 12px;
         }
 
         .tooltip:hover .tooltip-text {
@@ -186,25 +211,28 @@
         }
 
         .quick-start-card {
-            background: #f8f9fa;
+            background: var(--surface-bg);
+            border: 1px solid var(--border);
             border-radius: 3px;
             padding: 0.5rem;
             position: relative;
-            transition: all 0.2s ease;
-            border: 1px solid var(--border);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             min-width: 32px; /* Initial collapsed width */
             width: 32px; /* Initial collapsed width */
             height: 32px; /* Initial collapsed height */
             overflow: hidden;
             cursor: pointer;
             flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
         }
 
         .quick-start-card:hover,
         .quick-start-card.expanded {
             width: 160px;
             height: auto;
-            background: white;
+            background: var(--surface-bg);
+            border-color: var(--brand-primary);
+            box-shadow: var(--shadow-md);
         }
 
         .quick-start-card::before {
@@ -268,19 +296,63 @@
 
         /* Add Office Fabric-like command bar */
         .command-bar {
-            background: #f8f9fa;
+            background: var(--neutral-lighter);
             padding: 0.5rem;
-            border-radius: 4px;
+            border-radius: 2px;
             margin: 1rem 0;
             display: flex;
             align-items: center;
             gap: 1rem;
+            border: 1px solid var(--border);
         }
 
         .command-bar-divider {
             width: 1px;
             height: 24px;
             background: var(--border);
+        }
+
+        /* Focus states for accessibility */
+        button:focus,
+        .quick-start-card:focus {
+            outline: 2px solid var(--brand-primary);
+            outline-offset: 2px;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--neutral-lighter);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-secondary);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-primary);
+        }
+
+        /* Add subtle animations */
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-4px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .info-panel, 
+        .status-message {
+            animation: fadeIn 0.2s ease-out;
         }
     </style>
 </head>
