@@ -180,6 +180,7 @@
         let dialog;
         let isLoggedIn = false;
         let currentCognitoSub = '';
+        let isProcessing = false;  // Add this line
 
         function log(message, error = false) {
             const timestamp = new Date().toISOString();
@@ -403,8 +404,13 @@
         }
 
         async function submitSelectedCellContent() {
+            if (isProcessing) return;  // Prevent multiple submissions
+            
             log("Starting content submission");
             try {
+                isProcessing = true;  // Set processing flag
+                document.getElementById("submitButton").disabled = true;  // Disable button
+                
                 await Excel.run(async (context) => {
                     let range = context.workbook.getSelectedRange();
                     range.load("values, rowIndex, columnIndex, address, rowCount, columnCount");
@@ -483,6 +489,9 @@
                 log(`Error in submitSelectedCellContent: ${error.message}`, true);
                 document.getElementById("progressText").innerText = "Error occurred during processing";
                 document.querySelector(".loader").style.display = "none";
+            } finally {
+                isProcessing = false;  // Reset processing flag
+                document.getElementById("submitButton").disabled = false;  // Re-enable button
             }
         }
 
