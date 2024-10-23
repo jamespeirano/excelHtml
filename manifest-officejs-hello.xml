@@ -1,94 +1,96 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
-  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="TaskPaneApp">
-  <!-- If you create an app based off this repo, create an own ID e.g., via https://www.guidgen.com -->
-  <Id>fa49e626-c081-44ac-bf83-75c8056b5ee9</Id>
-  <Version>1.0.0.0</Version>
-  <ProviderName>Adversys</ProviderName>
-  <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Adversys" />
-  <Description DefaultValue="A CyberSecurity and Compliance AI automation tool." />
-  <IconUrl DefaultValue="https://xlwings.github.io/officejs-helloworld/icons/icon-32.png" />
-  <HighResolutionIconUrl DefaultValue="https://xlwings.github.io/officejs-helloworld/icons/icon-64.png" />
-  <SupportUrl DefaultValue="https://www.xlwings.org/contact" />
-  <AppDomains>
-    <AppDomain>https://jamespeirano.github.io/excelHtml/</AppDomain>
-    <AppDomain>https://jamespeirano.github.io/excelHtml/result.html</AppDomain>
-    <AppDomain>https://adversys.auth.us-east-1.amazoncognito.com</AppDomain>
-  </AppDomains>
-  <Hosts>
-    <Host Name="Workbook" />
-  </Hosts>
-  <DefaultSettings>
-    <SourceLocation DefaultValue="https://jamespeirano.github.io/excelHtml/" />
-  </DefaultSettings>
-  <Permissions>ReadWriteDocument</Permissions>
-  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+    xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" 
+    xsi:type="TaskPaneApp">
+
+    <!-- Basic Information -->
+    <Id>fa49e626-c081-44ac-bf83-75c8056b5ee9</Id>
+    <Version>1.0.0.0</Version>
+    <ProviderName>Adversys</ProviderName>
+    <DefaultLocale>en-US</DefaultLocale>
+    
+    <!-- Add-in Details -->
+    <DisplayName DefaultValue="Adversys Security" />
+    <Description DefaultValue="Enterprise-grade CyberSecurity and Compliance AI automation tool for Excel workbooks." />
+    <IconUrl DefaultValue="https://xlwings.github.io/officejs-helloworld/icons/icon-32.png" />
+    <HighResolutionIconUrl DefaultValue="https://xlwings.github.io/officejs-helloworld/icons/icon-64.png" />
+    <SupportUrl DefaultValue="https://www.xlwings.org/contact" />
+    
+    <!-- Domains Configuration -->
+    <AppDomains>
+        <AppDomain>https://jamespeirano.github.io/excelHtml/</AppDomain>
+        <AppDomain>https://jamespeirano.github.io/excelHtml/result.html</AppDomain>
+        <AppDomain>https://adversys.auth.us-east-1.amazoncognito.com</AppDomain>
+    </AppDomains>
+    
     <Hosts>
-      <Host xsi:type="Workbook">
-        <DesktopFormFactor>
-          <!-- resid must point to a Url Resource -->
-          <ExtensionPoint xsi:type="PrimaryCommandSurface">
-
-            <CustomTab id="MyTab">
-              <Group id="MyCommandsGroup">
-                <Label resid="MyCommandsGroup.Label" />
-                <Icon>
-                  <bt:Image size="16" resid="Icon.16x16" />
-                  <bt:Image size="32" resid="Icon.32x32" />
-                  <bt:Image size="80" resid="Icon.80x80" />
-                </Icon>
-
-                <!-- Ribbon button that opens the task pane -->
-                <Control xsi:type="Button" id="MyTaskpaneButton">
-                  <Label resid="MyTaskpaneButton.Label" />
-                  <Supertip>
-                    <Title resid="MyTaskpaneButton.Label" />
-                    <Description resid="MyTaskpaneButton.Tooltip" />
-                  </Supertip>
-                  <Icon>
-                    <bt:Image size="16" resid="Icon.16x16" />
-                    <bt:Image size="32" resid="Icon.32x32" />
-                    <bt:Image size="80" resid="Icon.80x80" />
-                  </Icon>
-                  <!-- Action type must be ShowTaskpane -->
-                  <Action xsi:type="ShowTaskpane">
-                    <TaskpaneId>ButtonId1</TaskpaneId>
-                    <!-- resid must point to a Url Resource -->
-                    <SourceLocation resid="Taskpane.Url" />
-                  </Action>
-                </Control>
-
-              </Group>
-              <Label resid="MyTab.TabLabel" />
-            </CustomTab>
-
-          </ExtensionPoint>
-        </DesktopFormFactor>
-      </Host>
+        <Host Name="Workbook" />
     </Hosts>
+    
+    <DefaultSettings>
+        <SourceLocation DefaultValue="https://jamespeirano.github.io/excelHtml/" />
+    </DefaultSettings>
+    
+    <Permissions>ReadWriteDocument</Permissions>
+    
+    <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+        <Hosts>
+            <Host xsi:type="Workbook">
+                <DesktopFormFactor>
+                    <ExtensionPoint xsi:type="PrimaryCommandSurface">
+                        <CustomTab id="AdversysTab">
+                            <Group id="SecurityTools">
+                                <Label resid="SecurityTools.Label" />
+                                <Icon>
+                                    <bt:Image size="16" resid="Icon.16x16" />
+                                    <bt:Image size="32" resid="Icon.32x32" />
+                                    <bt:Image size="80" resid="Icon.80x80" />
+                                </Icon>
 
-    <Resources>
-      <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://xlwings.github.io/officejs-helloworld/icons/icon-16.png" />
-        <bt:Image id="Icon.32x32" DefaultValue="https://xlwings.github.io/officejs-helloworld/icons/icon-32.png" />
-        <bt:Image id="Icon.80x80" DefaultValue="https://xlwings.github.io/officejs-helloworld/icons/icon-80.png" />
-      </bt:Images>
-      <bt:Urls>
-        <!-- This must point to the HTML document with the task pane -->
-        <bt:Url id="Taskpane.Url" DefaultValue="https://jamespeirano.github.io/excelHtml/" />
-      </bt:Urls>
-      <bt:ShortStrings>
-        <bt:String id="MyTab.TabLabel" DefaultValue="Adversys" />
-        <bt:String id="MyCommandsGroup.Label" DefaultValue="MyGroup" />
-        <bt:String id="MyTaskpaneButton.Label" DefaultValue="Show Taskpane" />
-      </bt:ShortStrings>
-      <bt:LongStrings>
-        <bt:String id="MyTaskpaneButton.Tooltip" DefaultValue="Click to show the task pane" />
-      </bt:LongStrings>
-    </Resources>
+                                <Control xsi:type="Button" id="SecurityTaskpane">
+                                    <Label resid="SecurityTaskpane.Label" />
+                                    <Supertip>
+                                        <Title resid="SecurityTaskpane.Title" />
+                                        <Description resid="SecurityTaskpane.Tooltip" />
+                                    </Supertip>
+                                    <Icon>
+                                        <bt:Image size="16" resid="Icon.16x16" />
+                                        <bt:Image size="32" resid="Icon.32x32" />
+                                        <bt:Image size="80" resid="Icon.80x80" />
+                                    </Icon>
+                                    <Action xsi:type="ShowTaskpane">
+                                        <TaskpaneId>SecurityPaneId1</TaskpaneId>
+                                        <SourceLocation resid="Taskpane.Url" />
+                                    </Action>
+                                </Control>
+                            </Group>
+                            <Label resid="AdversysTab.Label" />
+                        </CustomTab>
+                    </ExtensionPoint>
+                </DesktopFormFactor>
+            </Host>
+        </Hosts>
 
-  </VersionOverrides>
+        <Resources>
+            <bt:Images>
+                <bt:Image id="Icon.16x16" DefaultValue="https://xlwings.github.io/officejs-helloworld/icons/icon-16.png" />
+                <bt:Image id="Icon.32x32" DefaultValue="https://xlwings.github.io/officejs-helloworld/icons/icon-32.png" />
+                <bt:Image id="Icon.80x80" DefaultValue="https://xlwings.github.io/officejs-helloworld/icons/icon-80.png" />
+            </bt:Images>
+            <bt:Urls>
+                <bt:Url id="Taskpane.Url" DefaultValue="https://jamespeirano.github.io/excelHtml/" />
+            </bt:Urls>
+            <bt:ShortStrings>
+                <bt:String id="AdversysTab.Label" DefaultValue="Security" />
+                <bt:String id="SecurityTools.Label" DefaultValue="Adversys Tools" />
+                <bt:String id="SecurityTaskpane.Label" DefaultValue="Security Scanner" />
+                <bt:String id="SecurityTaskpane.Title" DefaultValue="Adversys Security Scanner" />
+            </bt:ShortStrings>
+            <bt:LongStrings>
+                <bt:String id="SecurityTaskpane.Tooltip" DefaultValue="Open Adversys Security Scanner to analyze and protect your workbook" />
+            </bt:LongStrings>
+        </Resources>
+    </VersionOverrides>
 </OfficeApp>

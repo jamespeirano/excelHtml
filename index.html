@@ -1,229 +1,259 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Excel Plugin - Cognito Redirect</title>
-    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adversys Security Scanner</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
-    <script type="text/javascript">
-        console.log("index.html script started loading.");
-    </script>
-<style>
-    :root {
-        --primary-color: rgb(10, 42, 68);
-        --secondary-color: rgb(10, 42, 68);
-        --background-color: #ecf0f1;
-        --text-color: #34495e;
-        --error-color: #e74c3c;
-        --success-color: #27ae60;
-        --border-color: #bdc3c7;
-    }
+    <style>
+        :root {
+            --brand-primary: #0f4880;
+            --brand-secondary: #1a73e8;
+            --surface-bg: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --success: #059669;
+            --error: #dc2626;
+            --border: #e5e7eb;
+        }
 
-    body {
-        font-family: 'Arial', sans-serif;
-        background-color: var(--background-color);
-        color: var(--text-color);
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-height: 100vh;
-    }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f9fafb;
+            color: var(--text-primary);
+            margin: 0;
+            min-height: 100vh;
+            padding: 1rem;
+        }
 
-    #container {
-        width: 100%;
-        max-width: 600px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
-        background-color: white;
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--surface-bg);
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+        }
 
-    h1 {
-        color: var(--primary-color);
-        font-size: 24px;
-        margin-bottom: 20px;
-    }
+        .header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
 
-    button {
-        padding: 12px 24px;
-        background-color: var(--primary-color);
-        color: white;
-        font-size: 16px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.3s ease, transform 0.1s ease, opacity 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
+        .title {
+            color: var(--brand-primary);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
 
-    button:hover {
-        opacity: 0.8;
-        transform: translateY(-2px);
-    }
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.625rem 1.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 0.375rem;
+            transition: all 200ms ease;
+            cursor: pointer;
+            min-width: 120px;
+            background-color: var(--brand-primary);
+            color: white;
+            border: none;
+        }
 
-    button:active {
-        transform: translateY(0);
-    }
+        button:hover {
+            background-color: var(--brand-secondary);
+            transform: translateY(-1px);
+        }
 
-    #selectedCells, #userInfo, #progressInfo {
-        width: 100%;
-        padding: 15px;
-        background-color: #f8f9fa;
-        border: 1px solid var(--border-color);
-        border-radius: 5px;
-        margin-top: 15px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
+        button:active {
+            transform: translateY(0);
+        }
 
-    .info-label {
-        font-weight: bold;
-        color: var(--primary-color);
-    }
+        .info-panel {
+            background-color: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
 
-    .loader {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid var(--secondary-color);
-        border-radius: 50%;
-        width: 30px;
-        height: 30px;
-        animation: spin 1s linear infinite;
-        margin: 10px auto;
-        display: none;
-    }
+        .info-panel-title {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
 
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
+        .info-panel-content {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
 
-    #progressText {
-        margin-top: 10px;
-        font-style: italic;
-        color: var(--secondary-color);
-    }
+        .loader {
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--brand-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+            display: none;
+        }
 
-    #submitButton {
-        background-color: var(--secondary-color);
-    }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
 
-    #submitButton:hover {
-        opacity: 0.8;
-    }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
 
-    #userInfo, #selectedCells {
-        transition: background-color 0.3s ease;
-    }
+        #progressText {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
 
-    #userInfo:hover, #selectedCells:hover {
-        background-color: #e8e8e8;
-    }
-</style>
+        .section {
+            margin-bottom: 1.5rem;
+        }
+    </style>
 </head>
+
 <body>
-    <div id="container">
-        <button id="loginButton">Log In with Cognito</button>
-        <div id="selectedCells" style="display: none;">
-            Selected cells: <span id="cellsDisplay"></span>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Adversys Security Scanner</h1>
         </div>
-        <button id="submitButton" style="display: none;">Submit</button>
-        <div id="userInfo" style="display: none;">
-            User sub: <span id="userSub"></span>
+
+        <div class="section">
+            <button id="loginButton">Log In with Cognito</button>
         </div>
+
+        <div id="selectedCells" class="info-panel" style="display: none;">
+            <div class="info-panel-title">Selected Range</div>
+            <div id="cellsDisplay" class="info-panel-content"></div>
+        </div>
+
+        <div id="userInfo" class="info-panel" style="display: none;">
+            <div class="info-panel-title">Session Info</div>
+            <div class="info-panel-content">
+                User ID: <span id="userSub"></span>
+            </div>
+        </div>
+
+        <div class="section">
+            <button id="submitButton" style="display: none;">Analyze Selection</button>
+        </div>
+
         <div id="progressInfo" style="display: none;">
-            <div id="progressText"></div>
             <div class="loader"></div>
+            <div id="progressText"></div>
         </div>
     </div>
+
     <script>
-        console.log("index.html body script started.");
-        const COGNITO_DOMAIN = 'https://adversys.auth.us-east-1.amazoncognito.com';
-        const CLIENT_ID = '7hhm23qtnjt41o28s2huu05trm';
-        const REDIRECT_URI = 'https://jamespeirano.github.io/excelHtml/redirect.html';
-        const TOKEN_ENDPOINT = `${COGNITO_DOMAIN}/oauth2/token`;
-        const LAMBDA_ENDPOINT = 'https://5y60xkx4dk.execute-api.us-east-1.amazonaws.com/prod/query';
+        const CONFIG = {
+            cognito: {
+                domain: 'https://adversys.auth.us-east-1.amazoncognito.com',
+                clientId: '7hhm23qtnjt41o28s2huu05trm',
+                redirectUri: 'https://jamespeirano.github.io/excelHtml/redirect.html',
+                tokenEndpoint: 'https://adversys.auth.us-east-1.amazoncognito.com/oauth2/token'
+            },
+            api: {
+                lambdaEndpoint: 'https://5y60xkx4dk.execute-api.us-east-1.amazonaws.com/prod/query'
+            },
+            retry: {
+                maxAttempts: 5,
+                maxBackoff: 8000 // 8 seconds
+            }
+        };
 
         let dialog;
         let isLoggedIn = false;
         let currentCognitoSub = '';
 
+        function log(message, error = false) {
+            const timestamp = new Date().toISOString();
+            const logMessage = `[${timestamp}] ${message}`;
+            if (error) {
+                console.error(logMessage);
+            } else {
+                console.log(logMessage);
+            }
+        }
+
         document.getElementById("loginButton").addEventListener("click", () => {
-            console.log("Login button clicked.");
+            log("Login button clicked");
             if (isLoggedIn) {
-                console.log("User is already logged in. Logging out.");
+                log("User is already logged in. Logging out.");
                 logout();
             } else {
-                const authUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=email+openid+phone`;
-                console.log("Auth URL:", authUrl);
+                const authUrl = `${CONFIG.cognito.domain}/login?response_type=code&client_id=${CONFIG.cognito.clientId}&redirect_uri=${CONFIG.cognito.redirectUri}&scope=email+openid+phone`;
                 Office.context.ui.displayDialogAsync(authUrl, { height: 60, width: 30 }, function (result) {
-                    console.log("displayDialogAsync callback fired.");
                     if (result.status === Office.AsyncResultStatus.Succeeded) {
-                        console.log("Dialog opened successfully.");
                         dialog = result.value;
                         dialog.addEventHandler(Office.EventType.DialogMessageReceived, handleMessage);
-                        console.log("DialogMessageReceived event handler added.");
+                        log("Dialog opened successfully");
                     } else {
-                        console.error("Failed to open dialog:", result.error.message);
+                        log(`Failed to open dialog: ${result.error.message}`, true);
                     }
                 });
             }
         });
 
         document.getElementById("submitButton").addEventListener("click", () => {
-            console.log("Submit button clicked.");
+            log("Submit button clicked");
             submitSelectedCellContent();
         });
 
         async function handleMessage(arg) {
-            console.log("handleMessage function called with arg:", arg);
+            log("Processing message from dialog");
             try {
                 const message = JSON.parse(arg.message);
-                console.log("Parsed message:", message);
                 if (message.type === 'authSuccess') {
-                    console.log("Authentication successful.");
+                    log("Authentication successful");
                     const tokens = await exchangeCodeForTokens(message.code);
-                    console.log("Tokens received:", tokens);
-                    
-                    // Decode the ID token to get the Cognito sub
                     const decodedToken = jwt_decode(tokens.id_token);
                     const cognitoSub = decodedToken.sub;
-                    console.log("Cognito sub:", cognitoSub);
-                    
-                    // Store tokens and update UI
+
                     sessionStorage.setItem('id_token', tokens.id_token);
                     sessionStorage.setItem('access_token', tokens.access_token);
                     sessionStorage.setItem('refresh_token', tokens.refresh_token);
                     updateUILoggedIn(cognitoSub);
-                    
+
                     try {
                         await dialog.close();
-                        console.log("Dialog closed successfully.");
+                        log("Dialog closed successfully");
                     } catch (closeError) {
-                        console.error("Error closing dialog:", closeError);
-                        // Proceed even if dialog closure fails
+                        log("Error closing dialog", true);
                     }
-                    
+
                     startListeningForSelectionChanges();
                 }
             } catch (error) {
-                console.error("Failed to process message from dialog:", error);
+                log(`Failed to process message from dialog: ${error.message}`, true);
             }
         }
 
         async function exchangeCodeForTokens(code) {
-            console.log("Exchanging code for tokens");
+            log("Exchanging code for tokens");
             const body = new URLSearchParams({
                 grant_type: 'authorization_code',
-                client_id: CLIENT_ID,
+                client_id: CONFIG.cognito.clientId,
                 code: code,
-                redirect_uri: REDIRECT_URI
+                redirect_uri: CONFIG.cognito.redirectUri
             });
 
-            const response = await fetch(TOKEN_ENDPOINT, {
+            const response = await fetch(CONFIG.cognito.tokenEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -239,7 +269,7 @@
         }
 
         function updateUILoggedIn(cognitoSub) {
-            console.log("updateUILoggedIn called");
+            log("Updating UI for logged in state");
             isLoggedIn = true;
             currentCognitoSub = cognitoSub;
             document.getElementById("loginButton").innerText = "Log Out";
@@ -247,11 +277,10 @@
             document.getElementById("submitButton").style.display = "block";
             document.getElementById("userInfo").style.display = "block";
             document.getElementById("userSub").innerText = cognitoSub;
-            console.log("UI updated for logged in state.");
         }
 
         function updateUILoggedOut() {
-            console.log("updateUILoggedOut called");
+            log("Updating UI for logged out state");
             isLoggedIn = false;
             currentCognitoSub = '';
             document.getElementById("loginButton").innerText = "Log In with Cognito";
@@ -261,225 +290,237 @@
             document.getElementById("progressInfo").style.display = "none";
             document.getElementById("cellsDisplay").innerText = "";
             document.getElementById("userSub").innerText = "";
-            console.log("UI updated for logged out state.");
         }
 
         function logout() {
-            console.log("logout function called");
+            log("Performing logout");
             sessionStorage.removeItem('id_token');
             sessionStorage.removeItem('access_token');
             sessionStorage.removeItem('refresh_token');
             updateUILoggedOut();
             stopListeningForSelectionChanges();
-            console.log("User logged out.");
         }
 
         function startListeningForSelectionChanges() {
-            console.log("startListeningForSelectionChanges called");
-            Excel.run(function (context) {
-                console.log("Excel.run started for startListeningForSelectionChanges");
-                var sheet = context.workbook.worksheets.getActiveWorksheet();
+            log("Starting selection change listener");
+            Excel.run(async (context) => {
+                const sheet = context.workbook.worksheets.getActiveWorksheet();
                 sheet.onSelectionChanged.add(handleSelectionChange);
-                return context.sync().then(function() {
-                    console.log("Selection change event handler added successfully");
-                });
-            }).catch(function (error) {
-                console.error("Error in startListeningForSelectionChanges:", error);
+                await context.sync();
+                log("Selection change event handler added");
+            }).catch(error => {
+                log(`Error in startListeningForSelectionChanges: ${error.message}`, true);
             });
         }
 
         function stopListeningForSelectionChanges() {
-            console.log("stopListeningForSelectionChanges called");
-            Excel.run(function (context) {
-                console.log("Excel.run started for stopListeningForSelectionChanges");
-                var sheet = context.workbook.worksheets.getActiveWorksheet();
+            log("Stopping selection change listener");
+            Excel.run(async (context) => {
+                const sheet = context.workbook.worksheets.getActiveWorksheet();
                 sheet.onSelectionChanged.remove(handleSelectionChange);
-                return context.sync().then(function() {
-                    console.log("Selection change event handler removed successfully");
-                });
-            }).catch(function (error) {
-                console.error("Error in stopListeningForSelectionChanges:", error);
+                await context.sync();
+                log("Selection change event handler removed");
+            }).catch(error => {
+                log(`Error in stopListeningForSelectionChanges: ${error.message}`, true);
             });
         }
 
         function handleSelectionChange(event) {
-            console.log("handleSelectionChange called with event:", event);
-            Excel.run(function (context) {
-                console.log("Excel.run started for handleSelectionChange");
-                var range = context.workbook.getSelectedRange();
+            Excel.run(async (context) => {
+                const range = context.workbook.getSelectedRange();
                 range.load("address");
-                return context.sync().then(function () {
-                    console.log("Selected range address:", range.address);
-                    document.getElementById("cellsDisplay").innerText = range.address;
-                });
-            }).catch(function (error) {
-                console.error("Error in handleSelectionChange:", error);
+                await context.sync();
+                document.getElementById("cellsDisplay").innerText = range.address;
+                log(`Selection changed to: ${range.address}`);
+            }).catch(error => {
+                log(`Error in handleSelectionChange: ${error.message}`, true);
             });
         }
 
         async function processCellContent(cellContent, currentCellAddress, rowIndex, columnIndex, context) {
-    console.log(`Processing cell ${currentCellAddress}`);
+            log(`Processing cell ${currentCellAddress}`);
 
-    const maxRetries = 5;
-    for (let retries = 0; retries < maxRetries; retries++) {
-        try {
-            console.log(`Attempt ${retries + 1} for cell ${currentCellAddress}`);
-            const response = await fetch(LAMBDA_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    query: cellContent,
-                    chat_history: '',
-                    cognito_sub: currentCognitoSub
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log(`Lambda function response for cell ${currentCellAddress}:`, data);
-
-            // Write the response to the cell to the right
-            let responseCell = context.workbook.worksheets.getActiveWorksheet().getCell(rowIndex, columnIndex + 1);
-            responseCell.values = [[data.response]];
-            responseCell.load("address");
-            await context.sync();
-            console.log(`Response written to cell ${responseCell.address} successfully`);
-            return true; // Success
-        } catch (fetchError) {
-            console.error(`Error fetching from Lambda for cell ${currentCellAddress} (Attempt ${retries + 1}/${maxRetries}):`, fetchError);
-            
-            if (retries === maxRetries - 1) {
-                // Last retry attempt failed
-                let responseCell = context.workbook.worksheets.getActiveWorksheet().getCell(rowIndex, columnIndex + 1);
-                responseCell.values = [["Error: Failed to fetch response after multiple attempts"]];
-                responseCell.load("address");
-                await context.sync();
-                console.log(`Error message written to cell ${responseCell.address}`);
-                return false; // Failed
-            } else {
-                // Calculate delay with exponential backoff
-                const delay = Math.min(1000 * Math.pow(2, retries), 8000); // Max delay of 8 seconds
-                console.log(`Retrying in ${delay/1000} seconds for cell ${currentCellAddress}`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-        }
-    }
-    return false; // Failed after all retries
-}
-
-async function retryFailedCells(failedCells, context, retryCount) {
-    console.log(`Retrying ${failedCells.length} failed cells. Attempt ${retryCount + 1}/3`);
-    document.getElementById("progressText").innerText = "Retrying failed cells...";
-    
-    const retryPromises = failedCells.map(cell => 
-        processCellContent(cell.content, cell.address, cell.rowIndex, cell.columnIndex, context)
-    );
-
-    const results = await Promise.all(retryPromises);
-    
-    const stillFailedCells = failedCells.filter((_, index) => !results[index]);
-    
-    if (stillFailedCells.length > 0 && retryCount < 2) {
-        console.log(`Waiting 5 seconds before next retry attempt...`);
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        return retryFailedCells(stillFailedCells, context, retryCount + 1);
-    } else {
-        return stillFailedCells;
-    }
-}
-
-async function submitSelectedCellContent() {
-    console.log("submitSelectedCellContent called");
-    try {
-        await Excel.run(async (context) => {
-            console.log("Excel.run started for submitSelectedCellContent");
-            let range = context.workbook.getSelectedRange();
-            range.load("values, rowIndex, columnIndex, address, rowCount, columnCount");
-            await context.sync();
-
-            console.log("Selected range address:", range.address);
-            let rowIndex = range.rowIndex;
-            let columnIndex = range.columnIndex;
-            let rowCount = range.rowCount;
-            let columnCount = range.columnCount;
-
-            document.getElementById("progressInfo").style.display = "block";
-            document.querySelector(".loader").style.display = "block";
-            document.getElementById("progressText").innerText = "Processing request...";
-
-            let cellPromises = [];
-            let cellInfos = [];
-
-            for (let i = 0; i < rowCount; i++) {
-                for (let j = 0; j < columnCount; j++) {
-                    let cellContent = range.values[i][j];
-                    let cell = context.workbook.worksheets.getActiveWorksheet().getCell(rowIndex + i, columnIndex + j);
-                    cell.load("address");
-                    await context.sync();
-                    let currentCellAddress = cell.address;
-
-                    if (!cellContent) {
-                        console.log(`Cell ${currentCellAddress} is empty. Skipping.`);
-                        continue;
-                    }
-
-                    cellInfos.push({
-                        content: cellContent,
-                        address: currentCellAddress,
-                        rowIndex: rowIndex + i,
-                        columnIndex: columnIndex + j
+            for (let retries = 0; retries < CONFIG.retry.maxAttempts; retries++) {
+                try {
+                    log(`Attempt ${retries + 1} for cell ${currentCellAddress}`);
+                    const response = await fetch(CONFIG.api.lambdaEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            query: cellContent,
+                            chat_history: '',
+                            cognito_sub: currentCognitoSub
+                        })
                     });
 
-                    cellPromises.push(processCellContent(cellContent, currentCellAddress, rowIndex + i, columnIndex + j, context));
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    log(`Received response for cell ${currentCellAddress}`);
+
+                    let responseCell = context.workbook.worksheets.getActiveWorksheet()
+                        .getCell(rowIndex, columnIndex + 1);
+                    responseCell.values = [[data.response]];
+                    await context.sync();
+                    return true;
+                } catch (error) {
+                    log(`Error processing cell ${currentCellAddress} (Attempt ${retries + 1}/${CONFIG.retry.maxAttempts}): ${error.message}`, true);
+
+                    if (retries === CONFIG.retry.maxAttempts - 1) {
+                        let responseCell = context.workbook.worksheets.getActiveWorksheet()
+                            .getCell(rowIndex, columnIndex + 1);
+                        responseCell.values = [["Error: Failed to process after multiple attempts"]];
+                        await context.sync();
+                        return false;
+                    } else {
+                        const delay = Math.min(1000 * Math.pow(2, retries), CONFIG.retry.maxBackoff);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
                 }
             }
+            return false;
+        }
 
-            const results = await Promise.all(cellPromises);
-            
-            let failedCells = cellInfos.filter((_, index) => !results[index]);
+        async function retryFailedCells(failedCells, context, retryCount) {
+            log(`Retrying ${failedCells.length} failed cells. Attempt ${retryCount + 1}/3`);
+            document.getElementById("progressText").innerText = "Retrying failed cells...";
 
-            if (failedCells.length > 0) {
-                console.log(`${failedCells.length} cells failed. Retrying...`);
-                failedCells = await retryFailedCells(failedCells, context, 0);
+            const results = await Promise.all(failedCells.map(cell =>
+                processCellContent(cell.content, cell.address, cell.rowIndex, cell.columnIndex, context)
+            ));
+
+            const stillFailedCells = failedCells.filter((_, index) => !results[index]);
+
+            if (stillFailedCells.length > 0 && retryCount < 2) {
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                return retryFailedCells(stillFailedCells, context, retryCount + 1);
             }
+            return stillFailedCells;
+        }
 
-            if (failedCells.length > 0) {
-                console.log(`${failedCells.length} cells still failed after retries.`);
-                document.getElementById("progressText").innerText = `Processing complete. ${failedCells.length} cells failed.`;
-            } else {
-                document.getElementById("progressText").innerText = "Processing complete";
+        async function submitSelectedCellContent() {
+            log("Starting content submission");
+            try {
+                await Excel.run(async (context) => {
+                    let range = context.workbook.getSelectedRange();
+                    range.load("values, rowIndex, columnIndex, address, rowCount, columnCount");
+                    await context.sync();
+
+                    const progressInfo = document.getElementById("progressInfo");
+                    const loader = document.querySelector(".loader");
+                    const progressText = document.getElementById("progressText");
+
+                    progressInfo.style.display = "block";
+                    loader.style.display = "block";
+                    progressText.innerText = "Processing selected cells...";
+
+                    let cellPromises = [];
+                    let cellInfos = [];
+                    const rowIndex = range.rowIndex;
+                    const columnIndex = range.columnIndex;
+                    const rowCount = range.rowCount;
+                    const columnCount = range.columnCount;
+
+                    // Process each cell in the selection
+                    for (let i = 0; i < rowCount; i++) {
+                        for (let j = 0; j < columnCount; j++) {
+                            const cellContent = range.values[i][j];
+                            const cell = context.workbook.worksheets.getActiveWorksheet()
+                                .getCell(rowIndex + i, columnIndex + j);
+                            cell.load("address");
+                            await context.sync();
+                            const currentCellAddress = cell.address;
+
+                            if (!cellContent) {
+                                log(`Skipping empty cell at ${currentCellAddress}`);
+                                continue;
+                            }
+
+                            cellInfos.push({
+                                content: cellContent,
+                                address: currentCellAddress,
+                                rowIndex: rowIndex + i,
+                                columnIndex: columnIndex + j
+                            });
+
+                            cellPromises.push(
+                                processCellContent(
+                                    cellContent,
+                                    currentCellAddress,
+                                    rowIndex + i,
+                                    columnIndex + j,
+                                    context
+                                )
+                            );
+                        }
+                    }
+
+                    // Process all cells and handle failures
+                    const results = await Promise.all(cellPromises);
+                    let failedCells = cellInfos.filter((_, index) => !results[index]);
+
+                    if (failedCells.length > 0) {
+                        log(`Initial processing complete. ${failedCells.length} cells failed. Starting retry...`);
+                        failedCells = await retryFailedCells(failedCells, context, 0);
+                    }
+
+                    // Update UI with final status
+                    if (failedCells.length > 0) {
+                        log(`Processing complete with ${failedCells.length} permanent failures`);
+                        progressText.innerText = `Processing complete. ${failedCells.length} cells failed.`;
+                    } else {
+                        log("Processing complete with no failures");
+                        progressText.innerText = "Processing complete";
+                    }
+
+                    loader.style.display = "none";
+                });
+            } catch (error) {
+                log(`Error in submitSelectedCellContent: ${error.message}`, true);
+                document.getElementById("progressText").innerText = "Error occurred during processing";
+                document.querySelector(".loader").style.display = "none";
             }
-            
-            document.querySelector(".loader").style.display = "none";
-        });
-    } catch (error) {
-        console.error("Error in submitSelectedCellContent:", error);
-        document.getElementById("progressText").innerText = "Error occurred during processing";
-        document.querySelector(".loader").style.display = "none";
-    }
-}
+        }
 
-        Office.onReady(function(info) {
-            console.log("Office.onReady called with info:", info);
-            const idToken = sessionStorage.getItem('id_token');
-            if (idToken) {
-                console.log("User is already logged in.");
-                const decodedToken = jwt_decode(idToken);
-                const cognitoSub = decodedToken.sub;
-                updateUILoggedIn(cognitoSub);
-                startListeningForSelectionChanges();
-            } else {
-                console.log("User is not logged in.");
+        // Initialize the add-in when Office is ready
+        Office.onReady((info) => {
+            log("Office.onReady called", false);
+            try {
+                const idToken = sessionStorage.getItem('id_token');
+                if (idToken) {
+                    log("Found existing session");
+                    const decodedToken = jwt_decode(idToken);
+                    updateUILoggedIn(decodedToken.sub);
+                    startListeningForSelectionChanges();
+                } else {
+                    log("No existing session found");
+                    updateUILoggedOut();
+                }
+            } catch (error) {
+                log(`Error during initialization: ${error.message}`, true);
                 updateUILoggedOut();
             }
         });
 
-        console.log("index.html script finished loading.");
+        // Handle errors globally
+        window.onerror = function (message, source, lineno, colno, error) {
+            log(`Global error: ${message} at ${source}:${lineno}:${colno}`, true);
+            document.getElementById("progressText").innerText = "An unexpected error occurred";
+            document.querySelector(".loader").style.display = "none";
+            return false;
+        };
+
+        // Handle unhandled promise rejections
+        window.onunhandledrejection = function (event) {
+            log(`Unhandled promise rejection: ${event.reason}`, true);
+            document.getElementById("progressText").innerText = "An unexpected error occurred";
+            document.querySelector(".loader").style.display = "none";
+        };
     </script>
 </body>
+
 </html>
