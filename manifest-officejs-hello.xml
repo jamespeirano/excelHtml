@@ -12,7 +12,7 @@
     <DefaultLocale>en-US</DefaultLocale>
     
     <!-- Add-in Details -->
-    <DisplayName DefaultValue="Adversys Response Suite" />
+    <DisplayName DefaultValue="Adversys Excel Copilot" />
     <Description DefaultValue="Enterprise-grade AI-powered assistant for Excel workbooks." />
     <IconUrl DefaultValue="https://xlwings.github.io/officejs-helloworld/icons/icon-32.png" />
     <HighResolutionIconUrl DefaultValue="https://xlwings.github.io/officejs-helloworld/icons/icon-64.png" />

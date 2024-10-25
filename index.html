@@ -4,19 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adversys Response Suite</title>
+    <title>Adversys Excel Copilot</title>
     <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
     <style>
         :root {
-            --brand-primary: #0078d4;  /* Office theme primary */
-            --brand-secondary: #2b88d8; /* Office theme secondary */
+            --brand-primary: #0078d4;
+            /* Office theme primary */
+            --brand-secondary: #2b88d8;
+            /* Office theme secondary */
             --surface-bg: #ffffff;
-            --text-primary: #333333;  /* Office neutral primary */
-            --text-secondary: #666666; /* Office neutral secondary */
-            --success: #107C10;  /* Office success */
-            --error: #A4262C;   /* Office error */
-            --border: #E1DFDD;  /* Office neutral light */
+            --text-primary: #333333;
+            /* Office neutral primary */
+            --text-secondary: #666666;
+            /* Office neutral secondary */
+            --success: #107C10;
+            /* Office success */
+            --error: #A4262C;
+            /* Office error */
+            --border: #E1DFDD;
+            /* Office neutral light */
             --brand-primary: #0078d4;
             --brand-secondary: #106ebe;
             --surface-bg: #ffffff;
@@ -42,9 +49,11 @@
         }
 
         .container {
-            max-width: 1200px; /* Increased width for better content display */
+            max-width: 1200px;
+            /* Increased width for better content display */
             padding: 1rem 2rem;
-            border-radius: 2px; /* Office UI style */
+            border-radius: 2px;
+            /* Office UI style */
             margin: 0 auto;
             background: var(--surface-bg);
             border-radius: 0.5rem;
@@ -54,11 +63,13 @@
         }
 
         .header {
-            display: block; /* Changed from flex to block */
+            display: block;
+            /* Changed from flex to block */
             padding: 1rem 0;
             border-bottom: 1px solid var(--border);
             margin-bottom: 1.5rem;
-            max-width: 900px; /* Limit the maximum width */
+            max-width: 900px;
+            /* Limit the maximum width */
             margin: 0 auto;
             background: var(--surface-bg);
         }
@@ -217,9 +228,12 @@
             padding: 0.5rem;
             position: relative;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            min-width: 32px; /* Initial collapsed width */
-            width: 32px; /* Initial collapsed width */
-            height: 32px; /* Initial collapsed height */
+            min-width: 32px;
+            /* Initial collapsed width */
+            width: 32px;
+            /* Initial collapsed width */
+            height: 32px;
+            /* Initial collapsed height */
             overflow: hidden;
             cursor: pointer;
             flex-shrink: 0;
@@ -340,17 +354,18 @@
 
         /* Add subtle animations */
         @keyframes fadeIn {
-            from { 
-                opacity: 0; 
-                transform: translateY(-4px); 
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
             }
-            to { 
-                opacity: 1; 
-                transform: translateY(0); 
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        .info-panel, 
+        .info-panel,
         .status-message {
             animation: fadeIn 0.2s ease-out;
         }
@@ -360,8 +375,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1 class="header-title">Adversys Response Suite</h1>
-            
+            <h1 class="header-title">Adversys Excel Copilot</h1>
+
             <div class="command-bar">
                 <div class="tooltip">
                     <button id="loginButton">Log In with Cognito</button>
@@ -378,7 +393,8 @@
                 <div class="quick-start-card" data-step="1">
                     <div class="quick-start-content">
                         <svg class="quick-start-icon" viewBox="0 0 24 24">
-                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                            <path fill="currentColor"
+                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
                         </svg>
                         <h3 class="quick-start-title">Sign In</h3>
                         <p class="quick-start-description">Log in with Cognito</p>
@@ -388,7 +404,8 @@
                 <div class="quick-start-card" data-step="2">
                     <div class="quick-start-content">
                         <svg class="quick-start-icon" viewBox="0 0 24 24">
-                            <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-8-2h2v-4h4v-2h-4V7h-2v4H7v2h4z"/>
+                            <path fill="currentColor"
+                                d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-8-2h2v-4h4v-2h-4V7h-2v4H7v2h4z" />
                         </svg>
                         <h3 class="quick-start-title">Select Cells</h3>
                         <p class="quick-start-description">Choose cells to analyze</p>
@@ -398,7 +415,7 @@
                 <div class="quick-start-card" data-step="3">
                     <div class="quick-start-content">
                         <svg class="quick-start-icon" viewBox="0 0 24 24">
-                            <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                         </svg>
                         <h3 class="quick-start-title">Analyze</h3>
                         <p class="quick-start-description">Process selected cells</p>
@@ -408,7 +425,8 @@
                 <div class="quick-start-card" data-step="4">
                     <div class="quick-start-content">
                         <svg class="quick-start-icon" viewBox="0 0 24 24">
-                            <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-4-4h-4v-2h4v-2h-4V9h4V7h-6v10h6z"/>
+                            <path fill="currentColor"
+                                d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-4-4h-4v-2h4v-2h-4V9h4V7h-6v10h6z" />
                         </svg>
                         <h3 class="quick-start-title">View Results</h3>
                         <p class="quick-start-description">See responses in adjacent cells</p>
@@ -687,12 +705,12 @@
 
         async function submitSelectedCellContent() {
             if (isProcessing) return;  // Prevent multiple submissions
-            
+
             log("Starting content submission");
             try {
                 isProcessing = true;  // Set processing flag
                 document.getElementById("submitButton").disabled = true;  // Disable button
-                
+
                 await Excel.run(async (context) => {
                     let range = context.workbook.getSelectedRange();
                     range.load("values, rowIndex, columnIndex, address, rowCount, columnCount");

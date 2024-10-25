@@ -1,4 +1,4 @@
-# Adversys Response Suite for Excel
+# Adversys Excel Copilot for Excel
 
 Excel add-in for AI-powered content generation!
 
