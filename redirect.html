@@ -130,6 +130,14 @@
             closeTimeout: 1000 // Time to wait before closing window after success
         };
 
+        // Define allowed origins globally
+        const ALLOWED_ORIGINS = [
+            'https://jamespeirano.github.io',
+            'https://localhost',
+            'https://excel.officeapps.live.com',
+            'https://excel.office.com'
+        ];
+
         // Logging utility
         function log(message, isError = false) {
             const timestamp = new Date().toISOString();
@@ -179,16 +187,8 @@
                 
                 // Try to send the message to the parent immediately
                 if (window.opener) {
-                    // Define allowed origins - make sure this matches your Excel add-in origin
-                    const allowedOrigins = [
-                        'https://jamespeirano.github.io',
-                        'https://localhost',
-                        'https://excel.officeapps.live.com',
-                        'https://excel.office.com'
-                    ];
-
                     // Send message to all potential parent origins
-                    allowedOrigins.forEach(origin => {
+                    ALLOWED_ORIGINS.forEach(origin => {
                         try {
                             window.opener.postMessage(
                                 JSON.stringify({ type: 'authSuccess', code: code }),
@@ -218,7 +218,7 @@
 
         // Add message confirmation listener
         window.addEventListener('message', function(event) {
-            if (allowedOrigins.includes(event.origin) && event.data === 'messageReceived') {
+            if (ALLOWED_ORIGINS.includes(event.origin) && event.data === 'messageReceived') {
                 log('Message receipt confirmed by parent');
                 window.close();
             }
