@@ -185,9 +185,9 @@
 
                 log('Authorization code received');
                 
-                // Try to send the message to the parent immediately
+                // For Office.js dialog, we need to use messageParent
                 if (window.opener) {
-                    // Send message to all potential parent origins
+                    // Try regular window.opener for non-Office contexts
                     ALLOWED_ORIGINS.forEach(origin => {
                         try {
                             window.opener.postMessage(
@@ -199,16 +199,25 @@
                             log(`Failed to send message to ${origin}: ${err.message}`);
                         }
                     });
-
-                    // Close the window after a brief delay
-                    setTimeout(() => {
-                        updateStatus('Authentication successful!');
-                        window.close();
-                    }, 500);
-                } else {
-                    log('Window opener not found');
-                    updateStatus('Authentication successful! Please return to Excel.');
                 }
+                
+                // Try Office.js messageParent
+                try {
+                    if (Office && Office.context.ui.messageParent) {
+                        log('Using Office.js messageParent');
+                        Office.context.ui.messageParent(JSON.stringify({
+                            type: 'authSuccess',
+                            code: code
+                        }));
+                        updateStatus('Authentication successful!');
+                        return;
+                    }
+                } catch (err) {
+                    log('Not in Office.js context, continuing with standard flow');
+                }
+
+                // If we reach here, show manual message
+                updateStatus('Authentication successful! Please return to Excel.');
 
             } catch (error) {
                 log(`Authentication error: ${error.message}`, true);
