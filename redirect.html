@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adversys Security - Authentication</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
     <style>
         :root {
             --brand-primary: #0f4880;
@@ -165,6 +166,12 @@
             }
         }
 
+        // Initialize Office.js
+        Office.onReady(() => {
+            log('Office.js initialized');
+            handleAuthentication();
+        });
+
         // Handle the authentication process
         async function handleAuthentication() {
             log('Starting authentication process');
@@ -184,39 +191,38 @@
                 }
 
                 log('Authorization code received');
-                
-                // For Office.js dialog, we need to use messageParent
-                if (window.opener) {
-                    // Try regular window.opener for non-Office contexts
-                    ALLOWED_ORIGINS.forEach(origin => {
-                        try {
-                            window.opener.postMessage(
-                                JSON.stringify({ type: 'authSuccess', code: code }),
-                                origin
-                            );
-                            log(`Sent message to origin: ${origin}`);
-                        } catch (err) {
-                            log(`Failed to send message to ${origin}: ${err.message}`);
-                        }
-                    });
-                }
-                
-                // Try Office.js messageParent
+
+                // Try Office.js messageParent first
                 try {
-                    if (Office && Office.context.ui.messageParent) {
-                        log('Using Office.js messageParent');
-                        Office.context.ui.messageParent(JSON.stringify({
-                            type: 'authSuccess',
-                            code: code
-                        }));
-                        updateStatus('Authentication successful!');
-                        return;
-                    }
+                    log('Attempting to use Office.js messageParent');
+                    Office.context.ui.messageParent(JSON.stringify({
+                        type: 'authSuccess',
+                        code: code
+                    }));
+                    updateStatus('Authentication successful!');
+                    return;
                 } catch (err) {
-                    log('Not in Office.js context, continuing with standard flow');
+                    log('Office.js messageParent failed, falling back to postMessage', true);
+                    
+                    // Fallback to window.opener if available
+                    if (window.opener) {
+                        ALLOWED_ORIGINS.forEach(origin => {
+                            try {
+                                window.opener.postMessage(
+                                    JSON.stringify({ type: 'authSuccess', code: code }),
+                                    origin
+                                );
+                                log(`Sent message to origin: ${origin}`);
+                            } catch (err) {
+                                log(`Failed to send message to ${origin}: ${err.message}`);
+                            }
+                        });
+                    } else {
+                        log('No window.opener available');
+                    }
                 }
 
-                // If we reach here, show manual message
+                // Show manual message if all else fails
                 updateStatus('Authentication successful! Please return to Excel.');
 
             } catch (error) {
@@ -232,9 +238,6 @@
                 window.close();
             }
         });
-
-        // Initialize when page loads
-        window.onload = handleAuthentication;
 
         // Handle any unhandled errors
         window.onerror = function (message, source, lineno, colno, error) {
