@@ -529,8 +529,15 @@
                     sessionStorage.setItem('id_token', tokens.id_token);
                     sessionStorage.setItem('access_token', tokens.access_token);
                     sessionStorage.setItem('refresh_token', tokens.refresh_token);
+                    
+                    // Send confirmation back to redirect window
+                    if (dialog && dialog.messageParent) {
+                        dialog.messageParent('messageReceived');
+                    }
+                    
                     updateUILoggedIn(cognitoSub);
-
+                    
+                    // Close dialog after confirmation
                     try {
                         await dialog.close();
                         log("Dialog closed successfully");

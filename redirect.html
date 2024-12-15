@@ -176,57 +176,53 @@
                 }
 
                 log('Authorization code received');
-                localStorage.setItem('authCode', code);
+                
+                // Try to send the message to the parent immediately
+                if (window.opener) {
+                    // Define allowed origins - make sure this matches your Excel add-in origin
+                    const allowedOrigins = [
+                        'https://jamespeirano.github.io',
+                        'https://localhost',
+                        'https://excel.officeapps.live.com',
+                        'https://excel.office.com'
+                    ];
 
-                // Check if window.opener exists
-                if (!window.opener) {
-                    log('Window opener not found, showing manual close message');
-                    updateStatus('Authentication successful! You can close this window.', 'success');
-                    return;
-                }
+                    // Send message to all potential parent origins
+                    allowedOrigins.forEach(origin => {
+                        try {
+                            window.opener.postMessage(
+                                JSON.stringify({ type: 'authSuccess', code: code }),
+                                origin
+                            );
+                            log(`Sent message to origin: ${origin}`);
+                        } catch (err) {
+                            log(`Failed to send message to ${origin}: ${err.message}`);
+                        }
+                    });
 
-                // Set a timeout for message sending
-                const messageTimeout = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('Message sending timed out')), CONFIG.messageTimeout);
-                });
-
-                // Try to send the message to the parent with error handling
-                const messageSending = new Promise((resolve, reject) => {
-                    try {
-                        window.opener.postMessage(
-                            JSON.stringify({ type: 'authSuccess', code: code }),
-                            '*'
-                        );
-                        resolve();
-                    } catch (err) {
-                        reject(new Error(`Failed to send message: ${err.message}`));
-                    }
-                });
-
-                // Wait for message to be sent or timeout
-                await Promise.race([messageSending, messageTimeout]);
-
-                updateStatus('Authentication successful!');
-                log('Authentication successful, closing window');
-
-                // Close window after a short delay
-                setTimeout(() => {
-                    try {
+                    // Close the window after a brief delay
+                    setTimeout(() => {
+                        updateStatus('Authentication successful!');
                         window.close();
-                    } catch (err) {
-                        log('Unable to close window automatically', true);
-                        updateStatus('Authentication successful! You can close this window.', 'success');
-                    }
-                }, CONFIG.closeTimeout);
+                    }, 500);
+                } else {
+                    log('Window opener not found');
+                    updateStatus('Authentication successful! Please return to Excel.');
+                }
 
             } catch (error) {
                 log(`Authentication error: ${error.message}`, true);
-                updateStatus(
-                    'Authentication completed. You can close this window and return to Excel.',
-                    'success'
-                );
+                updateStatus('Authentication error. Please try again.', 'error');
             }
         }
+
+        // Add message confirmation listener
+        window.addEventListener('message', function(event) {
+            if (allowedOrigins.includes(event.origin) && event.data === 'messageReceived') {
+                log('Message receipt confirmed by parent');
+                window.close();
+            }
+        });
 
         // Initialize when page loads
         window.onload = handleAuthentication;
