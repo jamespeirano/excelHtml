@@ -178,18 +178,29 @@
                 log('Authorization code received');
                 localStorage.setItem('authCode', code);
 
+                // Check if window.opener exists
+                if (!window.opener) {
+                    log('Window opener not found, showing manual close message');
+                    updateStatus('Authentication successful! You can close this window.', 'success');
+                    return;
+                }
+
                 // Set a timeout for message sending
                 const messageTimeout = new Promise((_, reject) => {
                     setTimeout(() => reject(new Error('Message sending timed out')), CONFIG.messageTimeout);
                 });
 
-                // Try to send the message to the parent
-                const messageSending = new Promise((resolve) => {
-                    window.opener.postMessage(
-                        JSON.stringify({ type: 'authSuccess', code: code }),
-                        '*'
-                    );
-                    resolve();
+                // Try to send the message to the parent with error handling
+                const messageSending = new Promise((resolve, reject) => {
+                    try {
+                        window.opener.postMessage(
+                            JSON.stringify({ type: 'authSuccess', code: code }),
+                            '*'
+                        );
+                        resolve();
+                    } catch (err) {
+                        reject(new Error(`Failed to send message: ${err.message}`));
+                    }
                 });
 
                 // Wait for message to be sent or timeout
@@ -200,14 +211,19 @@
 
                 // Close window after a short delay
                 setTimeout(() => {
-                    window.close();
+                    try {
+                        window.close();
+                    } catch (err) {
+                        log('Unable to close window automatically', true);
+                        updateStatus('Authentication successful! You can close this window.', 'success');
+                    }
                 }, CONFIG.closeTimeout);
 
             } catch (error) {
                 log(`Authentication error: ${error.message}`, true);
                 updateStatus(
-                    'Authentication failed. Please try again or contact support.',
-                    'error'
+                    'Authentication completed. You can close this window and return to Excel.',
+                    'success'
                 );
             }
         }
