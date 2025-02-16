@@ -125,9 +125,16 @@
     <script>
         // Configuration
         const CONFIG = {
-            debug: false, // Set to true to show debug information
-            messageTimeout: 5000, // Time to wait for message sending before showing error
-            closeTimeout: 1000 // Time to wait before closing window after success
+            debug: true, // Enable debug logging
+            messageTimeout: 5000,
+            closeTimeout: 1000,
+            allowedOrigins: [
+                'https://jamespeirano.github.io',
+                'https://localhost',
+                'https://excel.officeapps.live.com',
+                'https://excel.office.com',
+                'https://excel-web.office.com'
+            ]
         };
 
         // Logging utility
@@ -144,7 +151,6 @@
             isError ? console.error(logMessage) : console.log(logMessage);
         }
 
-        // Update UI status
         function updateStatus(message, type = 'success') {
             const statusElement = document.getElementById('status');
             statusElement.textContent = message;
@@ -157,11 +163,11 @@
             }
         }
 
-        // Handle the authentication process
         async function handleAuthentication() {
             log('Starting authentication process');
 
             try {
+                // Parse URL parameters including Office dialog parameters
                 const urlParams = new URLSearchParams(window.location.search);
                 const code = urlParams.get('code');
                 const error = urlParams.get('error');
@@ -175,66 +181,84 @@
                     throw new Error('No authorization code received');
                 }
 
-                log('Authorization code received');
-                
-                // Try to send the message to the parent immediately
-                if (window.opener) {
-                    // Define allowed origins - make sure this matches your Excel add-in origin
-                    const allowedOrigins = [
-                        'https://jamespeirano.github.io',
-                        'https://localhost',
-                        'https://excel.officeapps.live.com',
-                        'https://excel.office.com'
-                    ];
+                log('Authorization code received: ' + code.substring(0, 5) + '...');
 
-                    // Send message to all potential parent origins
-                    allowedOrigins.forEach(origin => {
+                // Handle message passing to parent window
+                if (window.opener) {
+                    log('Found window.opener, attempting to send message');
+                    
+                    // Try sending to each allowed origin
+                    for (const origin of CONFIG.allowedOrigins) {
                         try {
+                            log(`Attempting to send message to: ${origin}`);
                             window.opener.postMessage(
-                                JSON.stringify({ type: 'authSuccess', code: code }),
+                                JSON.stringify({ 
+                                    type: 'authSuccess', 
+                                    code: code 
+                                }),
                                 origin
                             );
-                            log(`Sent message to origin: ${origin}`);
                         } catch (err) {
-                            log(`Failed to send message to ${origin}: ${err.message}`);
+                            log(`Failed to send to ${origin}: ${err.message}`, true);
+                        }
+                    }
+
+                    // Wait for confirmation before closing
+                    let messageReceived = false;
+                    window.addEventListener('message', function(event) {
+                        if (CONFIG.allowedOrigins.includes(event.origin) && 
+                            event.data === 'messageReceived') {
+                            log('Message receipt confirmed by parent');
+                            messageReceived = true;
+                            setTimeout(() => window.close(), 500);
                         }
                     });
 
-                    // Close the window after a brief delay
+                    // Set a timeout in case we don't receive confirmation
                     setTimeout(() => {
+                        if (!messageReceived) {
+                            log('No confirmation received, closing window');
+                            window.close();
+                        }
+                    }, CONFIG.messageTimeout);
+
+                } else if (window.parent && window.parent !== window) {
+                    // Handle Office Dialog API case
+                    log('Using Office Dialog API messaging');
+                    try {
+                        window.parent.postMessage(
+                            JSON.stringify({ 
+                                type: 'authSuccess', 
+                                code: code 
+                            }), 
+                            '*'
+                        );
                         updateStatus('Authentication successful!');
-                        window.close();
-                    }, 500);
+                    } catch (err) {
+                        log('Failed to send message via Dialog API: ' + err.message, true);
+                        throw err;
+                    }
                 } else {
-                    log('Window opener not found');
-                    updateStatus('Authentication successful! Please return to Excel.');
+                    log('No parent window found');
+                    updateStatus('Authentication successful! You may close this window.');
                 }
 
             } catch (error) {
                 log(`Authentication error: ${error.message}`, true);
-                updateStatus('Authentication error. Please try again.', 'error');
+                updateStatus('Authentication error: ' + error.message, 'error');
             }
         }
-
-        // Add message confirmation listener
-        window.addEventListener('message', function(event) {
-            if (allowedOrigins.includes(event.origin) && event.data === 'messageReceived') {
-                log('Message receipt confirmed by parent');
-                window.close();
-            }
-        });
 
         // Initialize when page loads
         window.onload = handleAuthentication;
 
-        // Handle any unhandled errors
+        // Error handlers
         window.onerror = function (message, source, lineno, colno, error) {
             log(`Global error: ${message}`, true);
             updateStatus('An unexpected error occurred. Please try again.', 'error');
             return false;
         };
 
-        // Handle unhandled promise rejections
         window.onunhandledrejection = function (event) {
             log(`Unhandled promise rejection: ${event.reason}`, true);
             updateStatus('An unexpected error occurred. Please try again.', 'error');
@@ -242,4 +266,5 @@
     </script>
 </body>
 
+</html>
 </html>

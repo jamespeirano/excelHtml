@@ -20,9 +20,11 @@
     
     <!-- Domains Configuration -->
     <AppDomains>
-        <AppDomain>https://jamespeirano.github.io/excelHtml/</AppDomain>
-        <AppDomain>https://jamespeirano.github.io/excelHtml/result.html</AppDomain>
+        <AppDomain>https://jamespeirano.github.io</AppDomain>
         <AppDomain>https://adversys.auth.us-east-1.amazoncognito.com</AppDomain>
+        <AppDomain>https://excel.officeapps.live.com</AppDomain>
+        <AppDomain>https://excel.office.com</AppDomain>
+        <AppDomain>https://excel-web.office.com</AppDomain>
     </AppDomains>
     
     <Hosts>
