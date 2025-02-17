@@ -123,9 +123,13 @@
     </div>
 
     <script>
-        // Configuration
+        // Load Office.js
+        const officeScript = document.createElement('script');
+        officeScript.src = "https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js";
+        document.head.appendChild(officeScript);
+
         const CONFIG = {
-            debug: true, // Enable debug logging
+            debug: true,
             messageTimeout: 5000,
             closeTimeout: 1000,
             allowedOrigins: [
@@ -137,7 +141,6 @@
             ]
         };
 
-        // Logging utility
         function log(message, isError = false) {
             const timestamp = new Date().toISOString();
             const logMessage = `[${timestamp}] ${message}`;
@@ -167,11 +170,13 @@
             log('Starting authentication process');
 
             try {
-                // Parse URL parameters including Office dialog parameters
                 const urlParams = new URLSearchParams(window.location.search);
                 const code = urlParams.get('code');
                 const error = urlParams.get('error');
                 const errorDescription = urlParams.get('error_description');
+                const isDialog = urlParams.get('_host_Info')?.includes('isDialog');
+
+                log(`URL parameters: code=${!!code}, error=${!!error}, isDialog=${!!isDialog}`);
 
                 if (error) {
                     throw new Error(errorDescription || error);
@@ -183,11 +188,28 @@
 
                 log('Authorization code received: ' + code.substring(0, 5) + '...');
 
-                // Handle message passing to parent window
-                if (window.opener) {
+                // Check if we're in an Office Dialog context
+                if (isDialog) {
+                    log('Detected Office Dialog context');
+                    try {
+                        // Use messageParent for Office Dialog
+                        Office.onReady().then(() => {
+                            log('Office.js loaded, sending message via messageParent');
+                            Office.context.ui.messageParent(JSON.stringify({
+                                type: 'authSuccess',
+                                code: code
+                            }));
+                            updateStatus('Authentication successful!');
+                            setTimeout(() => window.close(), CONFIG.closeTimeout);
+                        });
+                    } catch (err) {
+                        log('Failed to send message via Office Dialog: ' + err.message, true);
+                        throw err;
+                    }
+                } else if (window.opener) {
+                    // Handle regular window popup case
                     log('Found window.opener, attempting to send message');
                     
-                    // Try sending to each allowed origin
                     for (const origin of CONFIG.allowedOrigins) {
                         try {
                             log(`Attempting to send message to: ${origin}`);
@@ -203,43 +225,12 @@
                         }
                     }
 
-                    // Wait for confirmation before closing
-                    let messageReceived = false;
-                    window.addEventListener('message', function(event) {
-                        if (CONFIG.allowedOrigins.includes(event.origin) && 
-                            event.data === 'messageReceived') {
-                            log('Message receipt confirmed by parent');
-                            messageReceived = true;
-                            setTimeout(() => window.close(), 500);
-                        }
-                    });
-
-                    // Set a timeout in case we don't receive confirmation
                     setTimeout(() => {
-                        if (!messageReceived) {
-                            log('No confirmation received, closing window');
-                            window.close();
-                        }
-                    }, CONFIG.messageTimeout);
-
-                } else if (window.parent && window.parent !== window) {
-                    // Handle Office Dialog API case
-                    log('Using Office Dialog API messaging');
-                    try {
-                        window.parent.postMessage(
-                            JSON.stringify({ 
-                                type: 'authSuccess', 
-                                code: code 
-                            }), 
-                            '*'
-                        );
                         updateStatus('Authentication successful!');
-                    } catch (err) {
-                        log('Failed to send message via Dialog API: ' + err.message, true);
-                        throw err;
-                    }
+                        window.close();
+                    }, CONFIG.closeTimeout);
                 } else {
-                    log('No parent window found');
+                    log('No parent window or dialog context found');
                     updateStatus('Authentication successful! You may close this window.');
                 }
 
@@ -249,8 +240,19 @@
             }
         }
 
-        // Initialize when page loads
-        window.onload = handleAuthentication;
+        // Initialize when Office is ready
+        officeScript.onload = () => {
+            Office.onReady(() => {
+                log('Office.js loaded and ready');
+                handleAuthentication();
+            });
+        };
+
+        // Fallback initialization if not in Office context
+        officeScript.onerror = () => {
+            log('Office.js failed to load, proceeding without Office context');
+            handleAuthentication();
+        };
 
         // Error handlers
         window.onerror = function (message, source, lineno, colno, error) {
@@ -266,5 +268,4 @@
     </script>
 </body>
 
-</html>
 </html>
