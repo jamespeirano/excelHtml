@@ -498,47 +498,52 @@
                 log("User is already logged in. Logging out.");
                 logout();
             } else {
-                // Generate and store state parameter
-                const state = Math.random().toString(36).substring(7);
-                sessionStorage.setItem('auth_state', state);
-                
-                // Generate random nonce for OIDC
-                const nonce = Math.random().toString(36).substring(7);
-                sessionStorage.setItem('auth_nonce', nonce);
-                
-                // Construct authorization URL with all required parameters
-                const params = new URLSearchParams({
-                    response_type: 'code',
-                    client_id: CONFIG.cognito.clientId,
-                    redirect_uri: CONFIG.cognito.redirectUri,
-                    state: state,
-                    nonce: nonce,
-                    scope: 'openid email profile',
-                });
+                try {
+                    // Generate and store state parameter
+                    const state = Math.random().toString(36).substring(7);
+                    sessionStorage.setItem('auth_state', state);
+                    
+                    // Generate random nonce for OIDC
+                    const nonce = Math.random().toString(36).substring(7);
+                    sessionStorage.setItem('auth_nonce', nonce);
+                    
+                    // Construct authorization URL with all required parameters
+                    const redirectUri = encodeURIComponent(CONFIG.cognito.redirectUri);
+                    const authUrl = `${CONFIG.cognito.domain}/login?` +
+                        `response_type=code&` +
+                        `client_id=${CONFIG.cognito.clientId}&` +
+                        `redirect_uri=${redirectUri}&` +
+                        `state=${state}&` +
+                        `nonce=${nonce}&` +
+                        `scope=openid+email+profile`;
 
-                const authUrl = `${CONFIG.cognito.domain}/oauth2/authorize?${params.toString()}`;
-                log(`Opening auth URL: ${authUrl}`);
-                
-                // Open the authentication window using Office Dialog API
-                Office.context.ui.displayDialogAsync(
-                    authUrl,
-                    {
-                        height: 60,
-                        width: 30,
-                        displayInIframe: false,
-                        promptBeforeOpen: true
-                    },
-                    function (result) {
-                        if (result.status === Office.AsyncResultStatus.Succeeded) {
-                            dialog = result.value;
-                            dialog.addEventHandler(Office.EventType.DialogMessageReceived, handleMessage);
-                            log("Dialog opened successfully");
-                        } else {
-                            log(`Failed to open dialog: ${result.error.message}`, true);
-                            updateStatus('Failed to open authentication window: ' + result.error.message, 'error');
+                    log(`Constructed auth URL: ${authUrl}`);
+                    
+                    // Open the authentication window using Office Dialog API
+                    Office.context.ui.displayDialogAsync(
+                        authUrl,
+                        {
+                            height: 60,
+                            width: 30,
+                            displayInIframe: false,
+                            promptBeforeOpen: true
+                        },
+                        function (result) {
+                            if (result.status === Office.AsyncResultStatus.Succeeded) {
+                                dialog = result.value;
+                                dialog.addEventHandler(Office.EventType.DialogMessageReceived, handleMessage);
+                                log("Dialog opened successfully");
+                            } else {
+                                const errorMsg = result.error.message || 'Unknown error';
+                                log(`Failed to open dialog: ${errorMsg}`, true);
+                                updateStatus('Failed to open authentication window: ' + errorMsg, 'error');
+                            }
                         }
-                    }
-                );
+                    );
+                } catch (error) {
+                    log(`Error initiating auth: ${error.message}`, true);
+                    updateStatus('Failed to start authentication: ' + error.message, 'error');
+                }
             }
         });
 

@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adversys Security - Authentication</title>
+    <title>Authentication Redirect</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
     <style>
         :root {
             --brand-primary: #0f4880;
@@ -123,129 +124,105 @@
     </div>
 
     <script>
-        // Load Office.js first
-        const officeScript = document.createElement('script');
-        officeScript.src = "https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js";
-        document.head.appendChild(officeScript);
-
-        const CONFIG = {
-            debug: true,
-            messageTimeout: 5000,
-            closeTimeout: 1000,
-            allowedOrigins: [
-                'https://jamespeirano.github.io',
-                'https://localhost',
-                'https://excel.officeapps.live.com',
-                'https://excel.office.com',
-                'https://excel-web.office.com'
-            ]
-        };
-
         function log(message, isError = false) {
             const timestamp = new Date().toISOString();
             const logMessage = `[${timestamp}] ${message}`;
+            console[isError ? 'error' : 'log'](logMessage);
 
-            if (CONFIG.debug) {
-                const debugElement = document.getElementById('debug');
-                debugElement.style.display = 'block';
-                debugElement.innerHTML += `${logMessage}<br>`;
-            }
-
-            isError ? console.error(logMessage) : console.log(logMessage);
+            const debugElement = document.getElementById('debug');
+            debugElement.style.display = 'block';
+            debugElement.innerHTML += `${logMessage}<br>`;
         }
 
-        function updateStatus(message, type = 'success') {
+        function updateStatus(message, type = 'info') {
             const statusElement = document.getElementById('status');
+            const messageElement = document.getElementById('message');
+            
             statusElement.textContent = message;
             statusElement.className = `status ${type}`;
             statusElement.style.display = 'block';
-
-            document.getElementById('message').textContent = message;
+            messageElement.textContent = message;
+            
             if (type === 'error') {
                 document.getElementById('spinner').style.display = 'none';
             }
+            
+            log(message, type === 'error');
         }
 
         async function handleAuthentication() {
             log('Starting authentication process');
+            log('Current URL: ' + window.location.href);
 
             try {
+                // Parse URL parameters
                 const urlParams = new URLSearchParams(window.location.search);
                 const code = urlParams.get('code');
                 const error = urlParams.get('error');
-                const errorDescription = urlParams.get('error_description');
                 const state = urlParams.get('state');
                 
-                log(`Received params - code: ${!!code}, error: ${!!error}, state: ${!!state}`);
+                // Log all URL parameters for debugging
+                urlParams.forEach((value, key) => {
+                    log(`URL parameter - ${key}: ${value}`);
+                });
 
                 if (error) {
-                    throw new Error(errorDescription || error);
+                    throw new Error(`Authentication error: ${urlParams.get('error_description') || error}`);
                 }
 
                 if (!code) {
                     throw new Error('No authorization code received');
                 }
 
-                // Try to send message using Office Dialog API
+                log('Received authorization code');
+
+                // Try Office Dialog API first
                 try {
-                    log('Attempting to send message via Office Dialog API');
+                    log('Attempting to use Office Dialog API');
+                    await Office.onReady();
                     Office.context.ui.messageParent(JSON.stringify({
                         type: 'authSuccess',
                         code: code,
                         state: state
                     }));
-                    updateStatus('Authentication successful!');
-                    // Don't close immediately to ensure message is sent
-                    setTimeout(() => window.close(), 1000);
+                    updateStatus('Authentication successful! Closing window...');
+                    setTimeout(() => window.close(), 2000);
                 } catch (officeError) {
                     log('Office Dialog API failed: ' + officeError.message);
                     
-                    // Fallback to window.opener if available
+                    // Fallback to window.opener
                     if (window.opener) {
                         log('Attempting to use window.opener');
                         window.opener.postMessage(
-                            JSON.stringify({ type: 'authSuccess', code: code, state: state }),
+                            JSON.stringify({ type: 'authSuccess', code, state }),
                             '*'
                         );
-                        setTimeout(() => window.close(), 1000);
+                        updateStatus('Authentication successful! Closing window...');
+                        setTimeout(() => window.close(), 2000);
                     } else {
                         log('No message mechanism available');
                         updateStatus('Authentication successful! You may close this window.');
                     }
                 }
-
             } catch (error) {
-                log(`Authentication error: ${error.message}`, true);
-                updateStatus('Authentication error: ' + error.message, 'error');
-                // Keep window open on error so user can see the message
+                log('Authentication error: ' + error.message, true);
+                updateStatus(error.message, 'error');
             }
         }
 
-        officeScript.onload = () => {
-            Office.onReady(() => {
-                log('Office.js loaded and ready');
-                handleAuthentication();
-            }).catch(error => {
-                log('Error in Office.onReady: ' + error.message, true);
-                handleAuthentication(); // Try anyway
-            });
-        };
-
-        officeScript.onerror = () => {
-            log('Failed to load Office.js, proceeding without Office context');
-            handleAuthentication();
-        };
+        // Initialize when page loads
+        window.onload = handleAuthentication;
 
         // Error handlers
-        window.onerror = function (message, source, lineno, colno, error) {
+        window.onerror = (message, source, lineno, colno, error) => {
             log(`Global error: ${message}`, true);
-            updateStatus('An unexpected error occurred. Please try again.', 'error');
+            updateStatus('An unexpected error occurred', 'error');
             return false;
         };
 
-        window.onunhandledrejection = function (event) {
-            log(`Unhandled promise rejection: ${event.reason}`, true);
-            updateStatus('An unexpected error occurred. Please try again.', 'error');
+        window.onunhandledrejection = (event) => {
+            log(`Unhandled rejection: ${event.reason}`, true);
+            updateStatus('An unexpected error occurred', 'error');
         };
     </script>
 </body>
