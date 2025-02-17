@@ -498,16 +498,34 @@
                 log("User is already logged in. Logging out.");
                 logout();
             } else {
-                const authUrl = `${CONFIG.cognito.domain}/login?response_type=code&client_id=${CONFIG.cognito.clientId}&redirect_uri=${CONFIG.cognito.redirectUri}&scope=email+openid+phone`;
-                Office.context.ui.displayDialogAsync(authUrl, { height: 60, width: 30 }, function (result) {
-                    if (result.status === Office.AsyncResultStatus.Succeeded) {
-                        dialog = result.value;
-                        dialog.addEventHandler(Office.EventType.DialogMessageReceived, handleMessage);
-                        log("Dialog opened successfully");
-                    } else {
-                        log(`Failed to open dialog: ${result.error.message}`, true);
+                // Construct state parameter to help prevent CSRF
+                const state = Math.random().toString(36).substring(7);
+                sessionStorage.setItem('auth_state', state);
+                
+                // Construct the full authorization URL with all required parameters
+                const authUrl = `${CONFIG.cognito.domain}/oauth2/authorize?` + 
+                    `response_type=code&` +
+                    `client_id=${CONFIG.cognito.clientId}&` +
+                    `redirect_uri=${encodeURIComponent(CONFIG.cognito.redirectUri)}&` +
+                    `state=${state}&` +
+                    `scope=email+openid+profile`;
+                    
+                log(`Opening auth URL: ${authUrl}`);
+                
+                // Use Office Dialog API to open the authentication window
+                Office.context.ui.displayDialogAsync(
+                    authUrl,
+                    { height: 60, width: 30, displayInIframe: true },
+                    function (result) {
+                        if (result.status === Office.AsyncResultStatus.Succeeded) {
+                            dialog = result.value;
+                            dialog.addEventHandler(Office.EventType.DialogMessageReceived, handleMessage);
+                            log("Dialog opened successfully");
+                        } else {
+                            log(`Failed to open dialog: ${result.error.message}`, true);
+                        }
                     }
-                });
+                );
             }
         });
 
@@ -521,31 +539,28 @@
             try {
                 const message = JSON.parse(arg.message);
                 if (message.type === 'authSuccess') {
-                    log("Authentication successful");
-                    const tokens = await exchangeCodeForTokens(message.code);
-                    const decodedToken = jwt_decode(tokens.id_token);
-                    const cognitoSub = decodedToken.sub;
-
-                    sessionStorage.setItem('id_token', tokens.id_token);
-                    sessionStorage.setItem('access_token', tokens.access_token);
-                    sessionStorage.setItem('refresh_token', tokens.refresh_token);
-                    
-                    // Send confirmation back to redirect window
-                    if (dialog && dialog.messageParent) {
-                        dialog.messageParent('messageReceived');
-                    }
-                    
-                    updateUILoggedIn(cognitoSub);
-                    
-                    // Close dialog after confirmation
+                    log("Authentication successful, exchanging code for tokens");
                     try {
-                        await dialog.close();
-                        log("Dialog closed successfully");
-                    } catch (closeError) {
-                        log("Error closing dialog", true);
-                    }
+                        const tokens = await exchangeCodeForTokens(message.code);
+                        const decodedToken = jwt_decode(tokens.id_token);
+                        const cognitoSub = decodedToken.sub;
 
-                    startListeningForSelectionChanges();
+                        sessionStorage.setItem('id_token', tokens.id_token);
+                        sessionStorage.setItem('access_token', tokens.access_token);
+                        sessionStorage.setItem('refresh_token', tokens.refresh_token);
+                        
+                        updateUILoggedIn(cognitoSub);
+                        
+                        if (dialog) {
+                            dialog.close();
+                            log("Dialog closed successfully");
+                        }
+
+                        startListeningForSelectionChanges();
+                    } catch (error) {
+                        log(`Token exchange failed: ${error.message}`, true);
+                        updateStatus('Authentication failed: ' + error.message, 'error');
+                    }
                 }
             } catch (error) {
                 log(`Failed to process message from dialog: ${error.message}`, true);
@@ -570,7 +585,8 @@
             });
 
             if (!response.ok) {
-                throw new Error('Failed to exchange code for tokens');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error_description || errorData.error || 'Failed to exchange code for tokens');
             }
 
             return response.json();
