@@ -498,24 +498,36 @@
                 log("User is already logged in. Logging out.");
                 logout();
             } else {
-                // Construct state parameter to help prevent CSRF
+                // Generate and store state parameter
                 const state = Math.random().toString(36).substring(7);
                 sessionStorage.setItem('auth_state', state);
                 
-                // Construct the full authorization URL with all required parameters
-                const authUrl = `${CONFIG.cognito.domain}/oauth2/authorize?` + 
-                    `response_type=code&` +
-                    `client_id=${CONFIG.cognito.clientId}&` +
-                    `redirect_uri=${encodeURIComponent(CONFIG.cognito.redirectUri)}&` +
-                    `state=${state}&` +
-                    `scope=email+openid+profile`;
-                    
+                // Generate random nonce for OIDC
+                const nonce = Math.random().toString(36).substring(7);
+                sessionStorage.setItem('auth_nonce', nonce);
+                
+                // Construct authorization URL with all required parameters
+                const params = new URLSearchParams({
+                    response_type: 'code',
+                    client_id: CONFIG.cognito.clientId,
+                    redirect_uri: CONFIG.cognito.redirectUri,
+                    state: state,
+                    nonce: nonce,
+                    scope: 'openid email profile',
+                });
+
+                const authUrl = `${CONFIG.cognito.domain}/oauth2/authorize?${params.toString()}`;
                 log(`Opening auth URL: ${authUrl}`);
                 
-                // Use Office Dialog API to open the authentication window
+                // Open the authentication window using Office Dialog API
                 Office.context.ui.displayDialogAsync(
                     authUrl,
-                    { height: 60, width: 30, displayInIframe: false },
+                    {
+                        height: 60,
+                        width: 30,
+                        displayInIframe: false,
+                        promptBeforeOpen: true
+                    },
                     function (result) {
                         if (result.status === Office.AsyncResultStatus.Succeeded) {
                             dialog = result.value;
@@ -523,8 +535,7 @@
                             log("Dialog opened successfully");
                         } else {
                             log(`Failed to open dialog: ${result.error.message}`, true);
-                            // Handle dialog open failure
-                            updateStatus('Failed to open authentication window', 'error');
+                            updateStatus('Failed to open authentication window: ' + result.error.message, 'error');
                         }
                     }
                 );
@@ -541,12 +552,23 @@
             try {
                 const message = JSON.parse(arg.message);
                 if (message.type === 'authSuccess') {
+                    // Verify state parameter
+                    const storedState = sessionStorage.getItem('auth_state');
+                    if (message.state !== storedState) {
+                        throw new Error('State parameter mismatch - possible CSRF attack');
+                    }
+                    
                     log("Authentication successful, exchanging code for tokens");
                     try {
                         const tokens = await exchangeCodeForTokens(message.code);
                         const decodedToken = jwt_decode(tokens.id_token);
                         const cognitoSub = decodedToken.sub;
 
+                        // Clear auth state after successful authentication
+                        sessionStorage.removeItem('auth_state');
+                        sessionStorage.removeItem('auth_nonce');
+
+                        // Store tokens
                         sessionStorage.setItem('id_token', tokens.id_token);
                         sessionStorage.setItem('access_token', tokens.access_token);
                         sessionStorage.setItem('refresh_token', tokens.refresh_token);
@@ -566,6 +588,7 @@
                 }
             } catch (error) {
                 log(`Failed to process message from dialog: ${error.message}`, true);
+                updateStatus('Authentication failed: ' + error.message, 'error');
             }
         }
 
