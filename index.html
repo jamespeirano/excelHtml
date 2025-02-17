@@ -515,7 +515,7 @@
                 // Use Office Dialog API to open the authentication window
                 Office.context.ui.displayDialogAsync(
                     authUrl,
-                    { height: 60, width: 30, displayInIframe: true },
+                    { height: 60, width: 30, displayInIframe: false },
                     function (result) {
                         if (result.status === Office.AsyncResultStatus.Succeeded) {
                             dialog = result.value;
@@ -523,6 +523,8 @@
                             log("Dialog opened successfully");
                         } else {
                             log(`Failed to open dialog: ${result.error.message}`, true);
+                            // Handle dialog open failure
+                            updateStatus('Failed to open authentication window', 'error');
                         }
                     }
                 );
@@ -862,6 +864,18 @@
                 card.classList.toggle('expanded');
             });
         });
+
+        // Add a function to handle status updates
+        function updateStatus(message, type = 'info') {
+            const statusMessage = document.getElementById('statusMessage');
+            const statusText = statusMessage.querySelector('.status-text');
+            
+            statusMessage.style.display = 'block';
+            statusMessage.className = `status-message ${type}`;
+            statusText.textContent = message;
+            
+            log(message, type === 'error');
+        }
     </script>
 </body>
 
